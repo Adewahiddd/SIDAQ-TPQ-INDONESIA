@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GuruController;
+use App\Http\Controllers\SantriController;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\RegistrationRejectedNotification;
 use App\Models\User;
@@ -23,9 +24,10 @@ Route::post('register',[AuthController::class,'register']);
 Route::post('login',[AuthController::class,'login']);
 Route::post('logout',[AuthController::class,'logout'])->middleware('auth:api');
 
-// Route::get('index',[AuthController::class,'index']);
 
 Route::middleware(['auth:api', 'role:admin_pusat'])->group(function () {
+//    index user
+    Route::get('index',[AuthController::class,'index']);
     // Verifikasi User Register
     Route::post('process-user-verification/{id}', [AuthController::class, 'processUserVerification']);
     // Get User Registar
@@ -41,13 +43,13 @@ Route::middleware(['auth:api', 'role:staff_pusat'])->group(function () {
 
 Route::middleware(['auth:api', 'role:admin_pondok'])->group(function () {
 // Registrasi ustadz
-    Route::post('registerguru',[GuruController::class,'registerguru']);
+    Route::post('registerguru',[GuruController::class,'registerGuru']);
 
 });
 
 Route::middleware(['auth:api', 'role:ust_pondok'])->group(function () {
-    // Route::post('login',[AuthController::class,'login']);
-
+    // Add Santri
+    Route::post('add-santri', [SantriController::class, 'AddSantri']);
 });
 
 Route::middleware(['auth:api', 'role:santri_pondok'])->group(function () {

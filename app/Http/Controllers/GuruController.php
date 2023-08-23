@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\guru;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class GuruController extends Controller
 {
@@ -13,69 +16,62 @@ class GuruController extends Controller
 
     }
 
-    public function registerguru(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nama' => 'required|string',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'tgl_lahir' => 'required|string',
-        ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 400);
-        }
+    public function registerGuru(Request $request)
+{
+    // Validasi input
+    $validator = Validator::make($request->all(), [
+        'nama' => 'required|string',
+        'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+        'email' => 'required|string|email|max:255|unique:gurus',
+        'password' => 'required|string|min:8',
+        'tgl_lahir' => 'required|date',
+    ]);
 
-        $nama = $request->nama;
-        $gambarPath = null;
-        $gambar = $request->file('gambar');
-        $email = $request->email;
-        $password = $request->password;
-        $tgl_lahir = $request->tgl_lahir;
-        // $guruRole = 'ust_pondok';
-
-        // Jika ada gambar diunggah, simpan ke folder 'public/images/poto-ustadz'
-        if ($gambar) {
-            $gambarPath = 'images/poto-ustadz/' . $nama . '.' . $gambar->getClientOriginalExtension();
-            $gambar->move(public_path('images/poto-ustadz'), $gambarPath);
-        }
-
-        // Check if the email uses a valid domain
-        $allowedDomains = ['gmail.com', 'yahoo.com'];
-        $domain = substr(strrchr($email, "@"), 1);
-        if (!in_array($domain, $allowedDomains)) {
-            return response()->json(['error' => 'Email must use @gmail or @yahoo domain'], 400);
-        }
-        // Check if the email already exists
-        if (Guru::where('email', $email)->exists()) {
-            return response()->json(['error' => 'Email already exists'], 400);
-        }
-
-        $guru = Guru::create([
-            'nama' => $nama,
-            'gambar' => $gambarPath, // Gunakan path gambar yang sudah dibuat
-            'role' => 'ust_pondok', // Set role sebagai 'admin_pondok'
-            'email' => $email,
-            'password' => bcrypt($password),
-            'tgl_lahir' => $tgl_lahir,
-        ]);
-
-        $token = $guru->createToken('API Token')->accessToken;
-        return response()->json([
-            'data' => [
-                'id' => $guru->id_ust,
-                'nama' => $guru->nama,
-                'role' => $guru->role,
-                'gambar' => $guru->gambar,
-                'email' => $guru->email,
-                'updated_at' => $guru->updated_at,
-                'created_at' => $guru->created_at,
-            ],
-            'access_token' => $token,
-            'token_type' => 'Bearer'
-        ]);
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 400);
     }
+
+    // Verifikasi apakah pengguna yang mengakses memiliki peran "admin_pondok"
+    $user = Auth::user(); // Ambil pengguna yang sedang terautentikasi
+    if ($user->role !== 'admin_pondok') {
+        return response()->json(['error' => 'Only admin_pondok can register a guru'], 403);
+    }
+
+    // Membuat guru baru
+    $guru = $user->gurus()->create([
+        'nama' => $request->nama,
+        'email' => $request->email,
+        'password' => bcrypt($request->password),
+        'tgl_lahir' => $request->tgl_lahir,
+        'role' => 'ust_pondok', // Tambahkan ini untuk mengisi role
+    ]);
+
+    // Pindahkan gambar yang diunggah ke penyimpanan
+    if ($request->hasFile('gambar')) {
+        $gambar = $request->file('gambar');
+        $gambarPath = 'images/poto-ustadz/' . $guru->id_ust . '.' . $gambar->getClientOriginalExtension();
+        Storage::disk('public')->put($gambarPath, file_get_contents($gambar));
+        $guru->gambar = $gambarPath;
+        $guru->save();
+    }
+
+    // Mengembalikan respons dengan data guru
+    return response()->json([
+        'data' => [
+            'id' => $guru->id_ust,
+            'nama' => $guru->nama,
+            'role' => $guru->role,
+            'gambar' => $guru->gambar,
+            'email' => $guru->email,
+            'updated_at' => $guru->updated_at,
+            'created_at' => $guru->created_at,
+        ],
+        'message' => 'Guru berhasil terdaftar'
+    ]);
+}
+
+
 
 
 }

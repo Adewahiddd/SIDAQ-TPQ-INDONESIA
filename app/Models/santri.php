@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Models\User;
+use App\Models\guru;
 class santri extends Model
 {
     use HasFactory;
@@ -20,8 +21,15 @@ class santri extends Model
     ];
 
 
-    public function ustadz()
+    public function guru()
     {
-        return $this->belongsTo(Guru::class, 'ustad');
+        return $this->belongsTo(guru::class);
     }
+
+    public function pondok()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+
 }

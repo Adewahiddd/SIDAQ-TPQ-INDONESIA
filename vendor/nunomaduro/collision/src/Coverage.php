@@ -45,7 +45,7 @@ final class Coverage
             return true;
         }
 
-        if (self::usingXdebug()) {
+        if (static::usingXdebug()) {
             $mode = getenv('XDEBUG_MODE') ?: ini_get('xdebug.mode');
 
             return $mode && in_array('coverage', explode(',', $mode), true);

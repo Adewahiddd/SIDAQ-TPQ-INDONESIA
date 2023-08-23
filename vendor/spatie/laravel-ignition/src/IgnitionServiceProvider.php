@@ -117,9 +117,7 @@ class IgnitionServiceProvider extends ServiceProvider
                 ->setStage(app()->environment())
                 ->setContextProviderDetector(new LaravelContextProviderDetector())
                 ->registerMiddleware($this->getFlareMiddleware())
-                ->registerMiddleware(new AddSolutions(new SolutionProviderRepository($this->getSolutionProviders())))
-                ->argumentReducers(config('ignition.argument_reducers', []))
-                ->withStackFrameArguments(config('ignition.with_stack_frame_arguments', true));
+                ->registerMiddleware(new AddSolutions(new SolutionProviderRepository($this->getSolutionProviders())));
         });
 
         $this->app->singleton(SentReports::class);

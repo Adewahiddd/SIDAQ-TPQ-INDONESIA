@@ -33,7 +33,7 @@ if ($composerAutoload) {
 
 function __phpunit_run_isolated_test()
 {
-    $dispatcher = Facade::instance()->initForIsolation(
+    $dispatcher = Facade::initForIsolation(
         PHPUnit\Event\Telemetry\HRTime::fromSecondsAndNanoseconds(
             {offsetSeconds},
             {offsetNanoseconds}
@@ -43,8 +43,7 @@ function __phpunit_run_isolated_test()
     require_once '{filename}';
 
     if ({collectCodeCoverageInformation}) {
-        CodeCoverage::instance()->init(ConfigurationRegistry::get(), CodeCoverageFilterRegistry::instance(), true);
-        CodeCoverage::instance()->ignoreLines({linesToBeIgnored});
+        CodeCoverage::instance()->init(ConfigurationRegistry::get(), CodeCoverageFilterRegistry::instance());
     }
 
     $test = new {className}('{methodName}');
@@ -59,7 +58,7 @@ function __phpunit_run_isolated_test()
 
     $output = '';
 
-    if (!$test->expectsOutput()) {
+    if (!$test->hasExpectationOnOutput()) {
         $output = $test->output();
     }
 

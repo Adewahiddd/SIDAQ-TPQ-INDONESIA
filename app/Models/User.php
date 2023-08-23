@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-
+use App\Models\guru;
 
 class User extends Authenticatable
 {
@@ -60,6 +60,15 @@ class User extends Authenticatable
         return $this->role && $this->role == $roles;
     }
 
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    public function gurus()
+    {
+        return $this->hasMany(guru::class, 'id_user'); // Hubungkan ke model Guru dengan foreign key id_user
+    }
 
 
 

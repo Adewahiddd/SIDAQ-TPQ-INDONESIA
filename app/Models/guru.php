@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-
+use App\Models\User;
 
 class guru extends Authenticatable
 {
@@ -15,7 +15,7 @@ class guru extends Authenticatable
 
     protected $primaryKey = 'id_ust';
     protected $table = 'gurus';
-    protected $fillable = ['nama', 'gambar', 'email', 'password', 'tgl_lahir'];
+    protected $fillable = ['nama', 'gambar', 'email', 'password', 'tgl_lahir','role'];
 
     protected $hidden = [
         'password',
@@ -28,9 +28,14 @@ class guru extends Authenticatable
     ];
 
 
-    public function santri()
+    public function user()
     {
-        return $this->hasMany(Santri::class, 'ustad');
+        return $this->belongsTo(User::class, 'id_user'); // Hubungkan ke model User dengan foreign key id_user
+    }
+
+    public function santris()
+    {
+        return $this->hasMany(santri::class);
     }
 
 

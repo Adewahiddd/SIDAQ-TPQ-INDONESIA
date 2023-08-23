@@ -17,11 +17,20 @@ use Laravel\Passport\Passport;
 class AuthController extends Controller
 {
     public function index()
-    {
-        $masjids = User::all(); // Ambil semua data user dari model
+{
+    $adminPusat = Auth::user(); // Mendapatkan data admin_pusat yang sedang login
+    if ($adminPusat->role === 'admin_pusat') {
+        // Hanya ambil data user dengan role staff_pusat dan admin_pondok
+        $masjids = User::whereIn('role', ['staff_pusat', 'admin_pondok'])->get();
 
         return response()->json(['data' => $masjids]);
     }
+
+    $masjids = User::all();
+
+    return response()->json(['data' => $masjids]);
+}
+
 
     public function getUserById($id)
     {
@@ -155,9 +164,21 @@ class AuthController extends Controller
     //         'password' => 'required'
     //     ]);
 
+    //     $user = null;
+
+    //     // Coba melakukan authentikasi pada pengguna (user) dengan Passport
     //     if (Auth::attempt($data)) {
     //         $user = Auth::user();
-    //         $token = $user->createToken('AuthToken')->accessToken;
+    //     }
+
+    //     // Jika tidak berhasil pada user, coba autentikasi pada guru (ust) dengan Passport
+    //     if (!$user && Auth::guard('guru')->attempt($data)) {
+    //         $user = Auth::guard('guru')->user();
+    //     }
+
+    //     if (!$user && Auth::guard('santri')->attempt($data)) {
+    //         $user = Auth::guard('santri')->user();
+    //     }
 
     //     if ($user) {
     //         $role = $user->role;
@@ -187,6 +208,8 @@ class AuthController extends Controller
     //     return response()->json(['error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'], 401);
     // }
 
+
+
     public function login(Request $request)
     {
         $data = $request->validate([
@@ -194,21 +217,46 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        if (Auth::guard('guru')->attempt($data)) {
-            $user = Auth::guard('guru')->user();
-            $role = 'ust_pondok'; // Ganti dengan role yang sesuai
+        $user = null;
 
-            $token = $user->createToken('Ustad Pondok Token')->accessToken;
-
-            return response()->json([
-                'user' => $user,
-                'token' => $token,
-                'role' => $role
-            ], 200);
+        // Coba melakukan authentikasi pada pengguna (user) dengan Passport
+        if (Auth::attempt($data)) {
+            $user = Auth::user();
         }
 
-        return response()->json([
-            'error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'
-        ], 401);
+        // Jika tidak berhasil pada user, coba autentikasi pada guru (ust) dengan Passport
+        if (!$user && Auth::guard('guru')->attempt($data)) {
+            $user = Auth::guard('guru')->user();
+        }
+
+        // Jika pengguna ditemukan
+        if ($user) {
+            $role = $user->role;
+
+            if ($role === 'admin_pondok') {
+                if (!$user->verifikasi) {
+                    return response()->json(['error_message' => 'Akun anda belum diverifikasi'], 401);
+                }
+
+                $token = $user->createToken('Admin Pondok Token')->accessToken;
+            } else {
+                $allowedRoles = ['admin_pusat', 'staff_pusat', 'ust_pondok', 'santri_pondok', 'staff_pondok'];
+
+                if (in_array($role, $allowedRoles)) {
+                    $token = $user->createToken($role . ' Token')->accessToken;
+                } else {
+                    return response()->json(['error_message' => 'Invalid role'], 401);
+                }
+            }
+
+            return response()->json(['user' => $user, 'token' => $token, 'role' => $role], 200);
+        }
+
+        return response()->json(['error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'], 401);
     }
+
+
+
+
+
 }

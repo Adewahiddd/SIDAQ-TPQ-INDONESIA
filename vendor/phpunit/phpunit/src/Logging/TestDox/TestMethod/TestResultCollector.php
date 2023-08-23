@@ -9,13 +9,7 @@
  */
 namespace PHPUnit\Logging\TestDox;
 
-use function array_keys;
-use function array_merge;
 use function assert;
-use function is_subclass_of;
-use function ksort;
-use function uksort;
-use function usort;
 use PHPUnit\Event\Code\TestMethod;
 use PHPUnit\Event\Code\Throwable;
 use PHPUnit\Event\EventFacadeIsSealedException;
@@ -40,7 +34,6 @@ use PHPUnit\Event\Test\TestStubCreated;
 use PHPUnit\Event\UnknownSubscriberTypeException;
 use PHPUnit\Framework\TestStatus\TestStatus;
 use PHPUnit\Logging\TestDox\TestResult as TestDoxTestMethod;
-use ReflectionMethod;
 use SoapClient;
 
 /**
@@ -65,9 +58,9 @@ final class TestResultCollector
      * @throws EventFacadeIsSealedException
      * @throws UnknownSubscriberTypeException
      */
-    public function __construct(Facade $facade)
+    public function __construct()
     {
-        $this->registerSubscribers($facade);
+        $this->registerSubscribers();
     }
 
     /**
@@ -78,58 +71,8 @@ final class TestResultCollector
         $result = [];
 
         foreach ($this->tests as $prettifiedClassName => $tests) {
-            $testsByDeclaringClass = [];
-
-            foreach ($tests as $test) {
-                $declaringClassName = (new ReflectionMethod($test->test()->className(), $test->test()->methodName()))->getDeclaringClass()->getName();
-
-                if (!isset($testsByDeclaringClass[$declaringClassName])) {
-                    $testsByDeclaringClass[$declaringClassName] = [];
-                }
-
-                $testsByDeclaringClass[$declaringClassName][] = $test;
-            }
-
-            foreach (array_keys($testsByDeclaringClass) as $declaringClassName) {
-                usort(
-                    $testsByDeclaringClass[$declaringClassName],
-                    static function (TestDoxTestMethod $a, TestDoxTestMethod $b): int
-                    {
-                        return $a->test()->line() <=> $b->test()->line();
-                    },
-                );
-            }
-
-            uksort(
-                $testsByDeclaringClass,
-                /**
-                 * @psalm-param class-string $a
-                 * @psalm-param class-string $b
-                 */
-                static function (string $a, string $b): int
-                {
-                    if (is_subclass_of($b, $a)) {
-                        return -1;
-                    }
-
-                    if (is_subclass_of($a, $b)) {
-                        return 1;
-                    }
-
-                    return 0;
-                },
-            );
-
-            $tests = [];
-
-            foreach ($testsByDeclaringClass as $_tests) {
-                $tests = array_merge($tests, $_tests);
-            }
-
             $result[$prettifiedClassName] = TestResultCollection::fromArray($tests);
         }
-
-        ksort($result);
 
         return $result;
     }
@@ -230,7 +173,7 @@ final class TestResultCollector
             $event->telemetryInfo()->time()->duration($this->time),
             $this->status,
             $this->throwable,
-            $this->testDoubles,
+            $this->testDoubles
         );
 
         $this->time        = null;
@@ -243,9 +186,9 @@ final class TestResultCollector
      * @throws EventFacadeIsSealedException
      * @throws UnknownSubscriberTypeException
      */
-    private function registerSubscribers(Facade $facade): void
+    private function registerSubscribers(): void
     {
-        $facade->registerSubscribers(
+        Facade::registerSubscribers(
             new TestConsideredRiskySubscriber($this),
             new TestCreatedMockObjectForAbstractClassSubscriber($this),
             new TestCreatedMockObjectForTraitSubscriber($this),

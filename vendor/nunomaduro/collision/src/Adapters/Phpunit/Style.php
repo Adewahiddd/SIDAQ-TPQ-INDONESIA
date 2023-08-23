@@ -6,7 +6,6 @@ namespace NunoMaduro\Collision\Adapters\Phpunit;
 
 use Closure;
 use NunoMaduro\Collision\Adapters\Phpunit\Printers\DefaultPrinter;
-use NunoMaduro\Collision\Adapters\Phpunit\Support\ResultReflection;
 use NunoMaduro\Collision\Exceptions\ShouldNotHappen;
 use NunoMaduro\Collision\Exceptions\TestException;
 use NunoMaduro\Collision\Exceptions\TestOutcome;
@@ -241,7 +240,7 @@ final class Style
             }
         }
 
-        $pending = ResultReflection::numberOfTests($result) - $result->numberOfTestsRun();
+        $pending = $result->numberOfTests() - $result->numberOfTestsRun();
         if ($pending > 0) {
             $tests[] = "\e[2m$pending pending\e[22m";
         }
@@ -343,9 +342,8 @@ final class Style
             '/vendor\/phpunit\/phpunit\/src/',
             '/vendor\/mockery\/mockery/',
             '/vendor\/laravel\/dusk/',
-            '/Illuminate\/Testing/',
-            '/Illuminate\/Foundation\/Testing/',
-            '/Illuminate\/Foundation\/Bootstrap\/HandleExceptions/',
+            '/vendor\/laravel\/framework\/src\/Illuminate\/Testing/',
+            '/vendor\/laravel\/framework\/src\/Illuminate\/Foundation\/Testing/',
             '/vendor\/symfony\/framework-bundle\/Test/',
             '/vendor\/symfony\/phpunit-bridge/',
             '/vendor\/symfony\/dom-crawler/',

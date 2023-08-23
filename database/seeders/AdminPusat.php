@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Role; // Import model Role
+use App\Models\Role;
 
 class AdminPusat extends Seeder
 {
@@ -16,28 +16,22 @@ class AdminPusat extends Seeder
      */
     public function run()
     {
-        $users = [
-            [
-                'nama_masjid' => 'Masjid A',
-                'gambar' => 'image1.jpg',
-                'email' => 'admin@gmail.com',
-                'password' => Hash::make('12345678'),
-                'provinsi' => 'Provinsi A',
-                'kabupaten' => 'Kabupaten A',
-                'alamat_masjid' => 'Alamat A',
-                'verifikasi' => true,
-            ],
-            // Tambahkan data user lainnya di sini
+        $adminData = [
+            'nama_masjid' => 'Admin Pusat',
+            'gambar' => 'image1.jpg',
+            'email' => 'adminpusat@gmail.com',
+            'password' => Hash::make('12345678'),
+            'provinsi' => 'Provinsi Pusat',
+            'kabupaten' => 'Kabupaten Pusat',
+            'alamat_masjid' => 'Alamat Pusat',
+            'verifikasi' => true,
         ];
 
-        foreach ($users as $userData) {
-            $user = User::create($userData);
-            if ($user->email === 'admin@gmail.com') {
-                $adminRole = Role::where('name_masjid', 'admin_pusat')->first(); // Gunakan model Role
-                if ($adminRole) {
-                    $user->roles()->attach($adminRole);
-                }
-            }
+        $admin = User::create($adminData);
+        $adminRole = Role::where('name', 'admin_pusat')->first();
+        if ($adminRole) {
+            $admin->roles()->attach($adminRole);
         }
     }
+
 }

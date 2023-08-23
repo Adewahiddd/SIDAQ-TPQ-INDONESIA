@@ -46,12 +46,21 @@ return [
             'provider' => 'users',
         ],
 
-        'guru' => [
+        'user' => [
             'driver' => 'passport',
-            'provider' => 'gurus', // Ganti 'gurus' dengan 'guru'
+            'provider' => 'users',
+        ],
+
+        'guru' => [
+            'driver' => 'session',
+            'provider' => 'gurus',
+        ],
+
+        'santri' => [
+            'driver' => 'session',
+            'provider' => 'santris',
         ],
     ],
-
 
     /*
     |--------------------------------------------------------------------------
@@ -78,7 +87,12 @@ return [
 
         'gurus' => [
             'driver' => 'eloquent',
-            'model' => App\Models\guru::class, // Ganti 'guru' dengan 'App\Models\guru'
+            'model' => App\Models\guru::class,
+        ],
+
+        'santris' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\santri::class,
         ],
     ],
 
