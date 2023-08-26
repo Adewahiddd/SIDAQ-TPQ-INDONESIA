@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\guru;
+use App\Models\santri;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -10,9 +11,19 @@ use Illuminate\Support\Facades\Validator;
 
 class SantriController extends Controller
 {
-    public function AddSantri(Request $request, $idguru)
+
+    public function index()
+    {
+        $santris = santri::all(); // Mendapatkan semua data santri
+
+        return response()->json(['santris' => $santris], 200);
+    }
+
+    
+    public function AddSantri(Request $request, $id)
     {
         $guru = Auth::user(); // Mengambil guru yang terautentikasi
+
         // Validasi input
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string',
@@ -49,20 +60,21 @@ class SantriController extends Controller
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
-        // Verifikasi apakah pengguna yang mengakses memiliki peran "admin_pondok"
-        // $guru = Auth::user(); // Ambil pengguna yang sedang terautentikasi
-        if ($guru->role !== 'admin_pondok') {
-            return response()->json(['error' => 'Only admin_pondok can add a santri'], 403);
-        }
+         // Verifikasi apakah pengguna yang mengakses memiliki peran "ust_pondok"
+         if (!$guru || $guru->role !== 'ust_pondok') {
+            return response()->json(['error' => 'Only ustadz can add a santri'], 403);
+        }        
 
-        $guru = guru::find($idguru);
+        // Temukan guru berdasarkan id
+        $guru = guru::find($id);
 
         if (!$guru) {
             return response()->json(['error' => 'Guru not found'], 404);
         }
 
       // Membuat santri baru
-    $santri = $guru->santris()->create([
+      $santri = santri::create([
+        'id_ust' => $guru->id_ust,
         'nama' => $request->nama,
         'gambar' => $request->gambar,
         'email' => $request->email,
@@ -85,7 +97,7 @@ class SantriController extends Controller
         'majelis' => $request->majelis,
         'khidmat' => $request->khidmat,
         'leadership' => $request->leadership,
-        'entrepreneur' => $request->enterepreneur,
+        'entrepreneur' => $request->entrepreneur,
         'speaking' => $request->speaking,
         'operation' => $request->operation,
         'mengajar' => $request->mengajar,
@@ -107,8 +119,8 @@ class SantriController extends Controller
             $image = $request->file('image');
             $imagePath = 'images/poto-fundraising/' . $guru->id_ust . '.' . $image->getClientOriginalExtension();
             Storage::disk('public')->put($imagePath, file_get_contents($image));
-            $guru->image = $imagePath;
-            $guru->save();
+            $santri->image = $imagePath;
+            $santri->save();
         }
 
         return response()->json([

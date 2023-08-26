@@ -45,9 +45,17 @@ return [
             'driver' => 'passport',
             'provider' => 'users',
         ],
+        'api-guru' => [
+            'driver' => 'passport',
+            'provider' => 'gurus',
+        ],
+        'api-santri' => [
+            'driver' => 'passport',
+            'provider' => 'santris',
+        ],
 
         'user' => [
-            'driver' => 'passport',
+            'driver' => 'session',
             'provider' => 'users',
         ],
 

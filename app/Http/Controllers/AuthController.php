@@ -156,105 +156,121 @@ class AuthController extends Controller
     }
 
 
-// Login
-    // public function login(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'email' => 'email|required',
-    //         'password' => 'required'
-    //     ]);
-
-    //     $user = null;
-
-    //     // Coba melakukan authentikasi pada pengguna (user) dengan Passport
-    //     if (Auth::attempt($data)) {
-    //         $user = Auth::user();
-    //     }
-
-    //     // Jika tidak berhasil pada user, coba autentikasi pada guru (ust) dengan Passport
-    //     if (!$user && Auth::guard('guru')->attempt($data)) {
-    //         $user = Auth::guard('guru')->user();
-    //     }
-
-    //     if (!$user && Auth::guard('santri')->attempt($data)) {
-    //         $user = Auth::guard('santri')->user();
-    //     }
-
-    //     if ($user) {
-    //         $role = $user->role;
-
-    //         if ($role === 'admin_pondok' && !$user->verifikasi) {
-    //             return response()->json(['error_message' => 'Akun admin pondok belum diverifikasi'], 401);
-    //         }
-
-    //         // Lanjutkan dengan pembuatan token sesuai role
-    //         if ($role === 'admin_pusat') {
-    //             $token = $user->createToken('Admin Pusat Token')->accessToken;
-    //         } elseif ($role === 'staff_pusat') {
-    //             $token = $user->createToken('Staff Pusat Token')->accessToken;
-    //         } elseif ($role === 'ust_pondok') {
-    //             $token = $user->createToken('Ustad Pondok Token')->accessToken;
-    //         } elseif ($role === 'santri_pondok') {
-    //             $token = $user->createToken('Santri Pondok Token')->accessToken;
-    //         } elseif ($role === 'staff_pondok') {
-    //             $token = $user->createToken('Staff Pondok Token')->accessToken;
-    //         } else {
-    //             return response()->json(['error_message' => 'Invalid role'], 401);
-    //         }
-
-    //         return response()->json(['user' => $user, 'token' => $token, 'role' => $role], 200);
-    //     }
-
-    //     return response()->json(['error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'], 401);
-    // }
-
-
-
     public function login(Request $request)
     {
         $data = $request->validate([
             'email' => 'email|required',
             'password' => 'required'
         ]);
-
         $user = null;
-
         // Coba melakukan authentikasi pada pengguna (user) dengan Passport
         if (Auth::attempt($data)) {
             $user = Auth::user();
         }
-
+        if (!$user && Auth::guard('user')->attempt($data)) {
+            $user = Auth::guard('user')->user();
+        }
         // Jika tidak berhasil pada user, coba autentikasi pada guru (ust) dengan Passport
         if (!$user && Auth::guard('guru')->attempt($data)) {
             $user = Auth::guard('guru')->user();
         }
-
-        // Jika pengguna ditemukan
+        if (!$user && Auth::guard('santri')->attempt($data)) {
+            $user = Auth::guard('santri')->user();
+        }
         if ($user) {
             $role = $user->role;
-
+            
             if ($role === 'admin_pondok') {
                 if (!$user->verifikasi) {
-                    return response()->json(['error_message' => 'Akun anda belum diverifikasi'], 401);
+                    return response()->json(['error_message' => 'Akun admin pondok belum diverifikasi'], 401);
                 }
-
                 $token = $user->createToken('Admin Pondok Token')->accessToken;
+            } elseif ($role === 'admin_pusat') {
+                $token = $user->createToken('Admin Pusat Token')->accessToken;
+            } elseif ($role === 'staff_pusat') {
+                $token = $user->createToken('Staff Pusat Token')->accessToken;
+            } elseif ($user->role === 'ust_pondok') {
+                $token = $user->createToken('Ustad Pondok Token')->accessToken;
+            } elseif ($role === 'santri_pondok') {
+                $token = $user->createToken('Santri Pondok Token')->accessToken;
+            } elseif ($role === 'staff_pondok') {
+                $token = $user->createToken('Staff Pondok Token')->accessToken;
             } else {
-                $allowedRoles = ['admin_pusat', 'staff_pusat', 'ust_pondok', 'santri_pondok', 'staff_pondok'];
-
-                if (in_array($role, $allowedRoles)) {
-                    $token = $user->createToken($role . ' Token')->accessToken;
-                } else {
-                    return response()->json(['error_message' => 'Invalid role'], 401);
-                }
+                return response()->json(['error_message' => 'Invalid role'], 401);
             }
-
+    
             return response()->json(['user' => $user, 'token' => $token, 'role' => $role], 200);
         }
-
-        return response()->json(['error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'], 401);
+    
+        return response()->json(['error_message' => 'email atau password salah'], 401);
     }
+    
 
+    // public function login(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'email' => 'email|required',
+    //         'password' => 'required'
+    //     ]);
+    
+    //     $guru = null;
+    //     $santri = null;
+    
+    //     // Coba melakukan authentikasi pada guru (ust) dengan Passport
+    //     if (Auth::guard('guru')->attempt($data)) {
+    //         $guru = Auth::guard('guru')->user();
+    //     }
+    
+    //     // Jika tidak berhasil pada guru, coba autentikasi pada santri dengan Passport
+    //     if (!$guru && Auth::guard('santri')->attempt($data)) {
+    //         $santri = Auth::guard('santri')->user();
+    //     }
+    
+    //     if ($guru) {
+    //         $role = $guru->role;
+    
+    //         if ($role === 'ust_pondok') {
+    //             $token = $guru->createToken('Ustad Pondok Token')->accessToken;
+    //             return response()->json(['user' => $guru, 'token' => $token, 'role' => $role], 200);
+    //         }
+    
+    //         if ($role === 'admin_pondok') {
+    //             if (!$guru->verifikasi) {
+    //                 return response()->json(['error_message' => 'Akun admin pondok belum diverifikasi'], 401);
+    //             }
+    //             $token = $guru->createToken('Admin Pondok Token')->accessToken;
+    //         }
+    
+    //         if ($role === 'admin_pusat') {
+    //             $token = $guru->createToken('Admin Pusat Token')->accessToken;
+    //         }
+    
+    //         if ($role === 'staff_pusat') {
+    //             $token = $guru->createToken('Staff Pusat Token')->accessToken;
+    //         }
+    
+    //         // Handle other roles for guru here...
+    
+    //     } elseif ($santri) {
+    //         $role = $santri->role;
+    
+    //         // Handle roles for santri here...
+    
+    //     } else {
+    //         // Jika autentikasi gagal pada guru dan santri, coba autentikasi pada pengguna (user) dengan Passport
+    //         if (Auth::attempt($data)) {
+    //             $user = Auth::user();
+    //             $role = $user->role;
+    
+    //             // Handle roles for user here...
+    
+    //             return response()->json(['user' => $user, 'token' => $token, 'role' => $role], 200);
+    //         }
+    //     }
+    
+    //     return response()->json(['error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'], 401);
+    // }
+    
 
 
 

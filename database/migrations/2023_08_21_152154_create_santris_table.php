@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::create('santris', function (Blueprint $table) {
             $table->id('id_santri');
-            $table->unsignedBigInteger('id_guru'); // Kolom baru untuk menghubungkan ke tabel gurus
-            $table->unsignedBigInteger('id_user'); // Kolom baru untuk menghubungkan ke tabel users
+            $table->unsignedBigInteger('id_ust'); // Kolom baru untuk menghubungkan ke tabel gurus
             $table->string('nama');
             $table->string('gambar')->nullable();
             $table->string('role')->default('santri_pondok');
@@ -46,8 +45,7 @@ return new class extends Migration
             $table->integer('hafalan');
             $table->timestamps();
 
-            $table->foreign('id_guru')->references('id_ust')->on('gurus')->onDelete('cascade');
-            $table->foreign('id_user')->references('id_masjid')->on('users')->onDelete('cascade');
+            $table->foreign('id_ust')->references('id_ust')->on('gurus')->onDelete('cascade');
         });
 
     }

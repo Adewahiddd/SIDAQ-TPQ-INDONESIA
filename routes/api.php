@@ -26,33 +26,35 @@ Route::post('logout',[AuthController::class,'logout'])->middleware('auth:api');
 
 
 Route::middleware(['auth:api', 'role:admin_pusat'])->group(function () {
-//    index user
+// index user
     Route::get('index',[AuthController::class,'index']);
-    // Verifikasi User Register
+// Verifikasi User Register
     Route::post('process-user-verification/{id}', [AuthController::class, 'processUserVerification']);
-    // Get User Registar
+// Get User Registar
     Route::post('UserById/{id}',[AuthController::class,'getUserById']);
-
 
 });
 
 Route::middleware(['auth:api', 'role:staff_pusat'])->group(function () {
 
-
 });
 
 Route::middleware(['auth:api', 'role:admin_pondok'])->group(function () {
-// Registrasi ustadz
+// register guru oleh admin pondok
     Route::post('registerguru',[GuruController::class,'registerGuru']);
+    // Route::get('index-guru',[AuthController::class,'index']);
 
 });
 
-Route::middleware(['auth:api', 'role:ust_pondok'])->group(function () {
-    // Add Santri
-    Route::post('add-santri', [SantriController::class, 'AddSantri']);
+
+Route::middleware(['auth:api-guru', 'role:ust_pondok'])->group(function () {
+    // registrasi santri oleh ustadz 
+    Route::post('registersantri/{id}', [SantriController::class, 'AddSantri']);
+
 });
 
-Route::middleware(['auth:api', 'role:santri_pondok'])->group(function () {
+Route::middleware(['auth:api-santri', 'role:santri_pondok'])->group(function () {
+    Route::get('index-santri',[SantriController::class,'index']);
 
 
 });

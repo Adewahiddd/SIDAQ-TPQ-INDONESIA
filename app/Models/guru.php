@@ -12,7 +12,8 @@ use App\Models\User;
 class guru extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
-
+    
+    protected $guard = 'guru';
     protected $primaryKey = 'id_ust';
     protected $table = 'gurus';
     protected $fillable = ['nama', 'gambar', 'email', 'password', 'tgl_lahir','role'];
