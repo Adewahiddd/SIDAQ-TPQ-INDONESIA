@@ -11,46 +11,62 @@ use Illuminate\Support\Facades\Notification;
 use App\Notifications\RegistrationAcceptedNotification;
 use App\Notifications\RegistrationRejectedNotification;
 use App\Notifications\NewUserRegistrationNotification;
-use Illuminate\Support\Facades\Hash;
-use Laravel\Passport\Passport;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
-    public function index()
-{
-    $adminPusat = Auth::user(); // Mendapatkan data admin_pusat yang sedang login
-    if ($adminPusat->role === 'admin_pusat') {
-        // Hanya ambil data user dengan role staff_pusat dan admin_pondok
-        $masjids = User::whereIn('role', ['staff_pusat', 'admin_pondok'])->get();
-
-        return response()->json(['data' => $masjids]);
+    public function getVerifiedUsers()
+    {
+        $verifiedAdminPondokUsers = User::where('verifikasi', true)
+                                        ->where('role', 'admin_pondok')
+                                        ->get();
+    
+        return response()->json(['data' => $verifiedAdminPondokUsers]);
     }
 
-    $masjids = User::all();
-
-    return response()->json(['data' => $masjids]);
-}
-
-
-    public function getUserById($id)
+    public function getNotVerifiedUsers()
     {
-        $user = User::find($id);
+        $verifiedUsers = User::where('verifikasi', false)
+                             ->where('role', 'admin_pondok')
+                             ->get();
 
+        return response()->json(['data' => $verifiedUsers]);
+    }
+
+
+    public function updateRole(Request $request, $id)
+    {
+        $loggedInUser = Auth::user();
+    
+        // Memeriksa apakah pengguna memiliki izin untuk mengubah role
+        if ($loggedInUser->role !== 'admin_pusat') {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
+    
+        $user = User::find($id);
+    
         if (!$user) {
             return response()->json(['error' => 'User not found'], 404);
         }
-
-        return response()->json([
-            'data' => [
-                'id' => $user->id_masjid,
+    
+        // Hanya admin_pusat yang bisa mengubah role menjadi role lain
+        if ($loggedInUser->role === 'admin_pusat') {
+            $newRole = $request->input('role'); // Ambil role dari permintaan
+            $user->role = $newRole;
+            $user->save();
+    
+            return response()->json([
+                'message' => 'User role updated successfully',
                 'nama_masjid' => $user->nama_masjid,
                 'email' => $user->email,
-                'updated_at' => $user->updated_at,
-                'created_at' => $user->created_at,
-            ],
-            'verifikasi' => $user->verifikasi,
-        ]);
+                'role' => $user->role
+            ]);
+
+        } else {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
     }
+
 
     public function register(Request $request)
     {
@@ -206,73 +222,80 @@ class AuthController extends Controller
     }
     
 
-    // public function login(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'email' => 'email|required',
-    //         'password' => 'required'
-    //     ]);
-    
-    //     $guru = null;
-    //     $santri = null;
-    
-    //     // Coba melakukan authentikasi pada guru (ust) dengan Passport
-    //     if (Auth::guard('guru')->attempt($data)) {
-    //         $guru = Auth::guard('guru')->user();
-    //     }
-    
-    //     // Jika tidak berhasil pada guru, coba autentikasi pada santri dengan Passport
-    //     if (!$guru && Auth::guard('santri')->attempt($data)) {
-    //         $santri = Auth::guard('santri')->user();
-    //     }
-    
-    //     if ($guru) {
-    //         $role = $guru->role;
-    
-    //         if ($role === 'ust_pondok') {
-    //             $token = $guru->createToken('Ustad Pondok Token')->accessToken;
-    //             return response()->json(['user' => $guru, 'token' => $token, 'role' => $role], 200);
-    //         }
-    
-    //         if ($role === 'admin_pondok') {
-    //             if (!$guru->verifikasi) {
-    //                 return response()->json(['error_message' => 'Akun admin pondok belum diverifikasi'], 401);
-    //             }
-    //             $token = $guru->createToken('Admin Pondok Token')->accessToken;
-    //         }
-    
-    //         if ($role === 'admin_pusat') {
-    //             $token = $guru->createToken('Admin Pusat Token')->accessToken;
-    //         }
-    
-    //         if ($role === 'staff_pusat') {
-    //             $token = $guru->createToken('Staff Pusat Token')->accessToken;
-    //         }
-    
-    //         // Handle other roles for guru here...
-    
-    //     } elseif ($santri) {
-    //         $role = $santri->role;
-    
-    //         // Handle roles for santri here...
-    
-    //     } else {
-    //         // Jika autentikasi gagal pada guru dan santri, coba autentikasi pada pengguna (user) dengan Passport
-    //         if (Auth::attempt($data)) {
-    //             $user = Auth::user();
-    //             $role = $user->role;
-    
-    //             // Handle roles for user here...
-    
-    //             return response()->json(['user' => $user, 'token' => $token, 'role' => $role], 200);
-    //         }
-    //     }
-    
-    //     return response()->json(['error_message' => 'Kombinasi email dan password salah atau akun belum di validasi'], 401);
-    // }
+   public function logout(Request $request)
+    {
+        $user = Auth::guard('api')->user();
+
+        if ($user) {
+            $user->token()->revoke();
+            return response()->json(['message' => 'Logout berhasil'], 200);
+        } else {
+            return response()->json(['error_message' => 'Tidak dapat menemukan pengguna'], 401);
+        }
+    }
+
     
 
-
+    public function updateAdmin(Request $request, $id)
+    {
+        $loggedInUser = Auth::user();
+    
+        $userToUpdate = User::find($id);
+    
+        if (!$userToUpdate) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+    
+        // Check if the logged-in user is admin_pusat or admin_pondok
+        if ($loggedInUser->role !== 'admin_pusat' && $loggedInUser->role !== 'admin_pondok') {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
+    
+        // Validate input data
+        $validator = Validator::make($request->all(), [
+            'nama_masjid' => 'required|string',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'email' => 'required|string|email|max:255|unique:users,email,'.$userToUpdate->id_masjid.',id_masjid',
+            'password' => 'required|string|min:8',
+            'provinsi' => 'required|string',
+            'kabupaten' => 'required|string',
+            'alamat_masjid' => 'required|string',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+    
+        // Update user's data
+        $userToUpdate->nama_masjid = $request->input('nama_masjid');
+        $userToUpdate->email = $request->input('email');
+        $userToUpdate->password = bcrypt($request->input('password'));
+        $userToUpdate->provinsi = $request->input('provinsi');
+        $userToUpdate->kabupaten = $request->input('kabupaten');
+        $userToUpdate->alamat_masjid = $request->input('alamat_masjid');
+    
+        if ($request->hasFile('gambar')) {
+            $existingImage = $userToUpdate->gambar;
+    
+            if ($existingImage && Storage::disk('public')->exists($existingImage)) {
+                Storage::disk('public')->delete($existingImage);
+            }
+    
+            $image = $request->file('gambar');
+            $imagePath = 'images/poto-masjid/' . $userToUpdate->id_masjid . '.' . $image->getClientOriginalExtension();
+            Storage::disk('public')->put($imagePath, file_get_contents($image));
+            $userToUpdate->gambar = $imagePath;
+        }
+    
+        $userToUpdate->save();
+    
+        return response()->json([
+            'message' => 'User data updated successfully',
+            'updated_data' => $userToUpdate
+        ]);
+    }
+    
+    
 
 
 }

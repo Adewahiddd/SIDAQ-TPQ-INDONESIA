@@ -14,20 +14,7 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    // yang asli
-    // public function handle(Request $request, Closure $next, ...$roles)
-    // {
-    //     $user = Auth::user();
 
-    //     if (!$user || !$user->hasAnyRole($roles)) {
-    //         return response()->json(['message' => 'Maaf, kamu tidak memiliki izin untuk mengakses halaman ini'], 403);
-    //     }
-
-    //     return $next($request);
-    // }
-
-
-// cadangan
     public function handle($request, Closure $next, ...$roles)
     {
         $user =auth()->user();

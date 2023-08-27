@@ -11,15 +11,26 @@ use Illuminate\Support\Facades\Validator;
 
 class SantriController extends Controller
 {
-
+// get santri berdasarkan id_ustadz nya
     public function index()
     {
-        $santris = santri::all(); // Mendapatkan semua data santri
+        $guru = auth('api-guru')->user(); // Mendapatkan informasi Guru (Ustad) yang sedang login
+            
+        if (!$guru) {
+            return response()->json(['error_message' => 'Anda belum terautentikasi'], 401);
+        }
+
+        $santris = Santri::where('id_ust', $guru->id_ust)->get();
+
+        if ($santris->isEmpty()) {
+            return response()->json(['error_message' => 'Maaf, Anda bukan ustad dari santri ini'], 403);
+        }
 
         return response()->json(['santris' => $santris], 200);
     }
 
     
+
     public function AddSantri(Request $request, $id)
     {
         $guru = Auth::user(); // Mengambil guru yang terautentikasi
@@ -128,6 +139,117 @@ class SantriController extends Controller
             'message' => 'Santri berhasil ditambahkan oleh guru'
         ], 201);
     }
+
+
+
+    public function updateSantri(Request $request, $id)
+    {
+        $guru = auth('api-santri')->user(); // Mengambil guru yang terautentikasi
+
+        // Verifikasi apakah pengguna yang mengakses memiliki peran "ust_pondok"
+        if (!$guru || $guru->role !== 'santri_pondok') {
+            return response()->json(['error' => 'Only santri can update a fundraising'], 403);
+        }
+
+        // Temukan santri berdasarkan id
+        $santri = santri::find($id);
+
+        if (!$santri) {
+            return response()->json(['error' => 'Santri not found'], 404);
+        }
+
+        // Memperbarui fundraising, image, dan tanggal
+        $santri->fundraising = $request->fundraising ?? $santri->fundraising;
+        
+        if ($request->hasFile('image')) {
+            // Mengambil gambar yang sudah ada
+            $existingImage = $santri->image;
+            // Hapus gambar yang sudah ada
+            if ($existingImage && Storage::disk('public')->exists($existingImage)) {
+                Storage::disk('public')->delete($existingImage);
+            }
+            $image = $request->file('image');
+            $imagePath = 'images/poto-fundraising/' . $guru->id_ust . '.' . $image->getClientOriginalExtension();
+            Storage::disk('public')->put($imagePath, file_get_contents($image));
+            $santri->image = $imagePath;
+        }
+        
+        $santri->save();
+        
+
+        $santri->tanggal = $request->tanggal ?? $santri->tanggal;
+        $santri->save();
+
+        return response()->json([
+            'data' => $santri,
+            'message' => 'Santri berhasil diperbarui oleh guru'
+        ], 200);
+    }
+
+
+    public function getProfile()
+    {
+        $santri = auth('api-santri')->user(); // Mendapatkan informasi Santri yang sedang login
+        
+        if (!$santri) {
+            return response()->json(['error_message' => 'Anda belum terautentikasi'], 401);
+        }
+
+        return response()->json([
+            'nama' => $santri->nama,
+            'gambar' => $santri->gambar,
+            'email' => $santri->email,
+            'tgl_lahir' => $santri->tgl_lahir,
+        ], 200);
+    }
+
+
+    public function updateProfile(Request $request)
+    {
+        $santri = auth('api-santri')->user(); // Mendapatkan informasi Santri yang sedang login
+        
+        if (!$santri) {
+            return response()->json(['error_message' => 'Anda belum terautentikasi'], 401);
+        }
+
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'email' => 'required|string|email|max:255|unique:santris,email,' . $santri->id_santri,
+            'password' => 'nullable|string|min:8',
+            'tgl_lahir' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        // Update informasi profil
+        $santri->nama = $request->nama;
+        $santri->email = $request->email;
+        $santri->tgl_lahir = $request->tgl_lahir;
+        
+        if ($request->hasFile('gambar')) {
+            $gambar = $request->file('gambar');
+            $gambarPath = 'images/poto-santri/' . $santri->id_santri . '.' . $gambar->getClientOriginalExtension();
+            Storage::disk('public')->put($gambarPath, file_get_contents($gambar));
+            $santri->gambar = $gambarPath;
+        }
+
+        if ($request->has('password')) {
+            $santri->password = bcrypt($request->password);
+        }
+
+        $santri->save();
+
+        return response()->json([
+            'data' => $santri,
+            'message' => 'Profil berhasil diperbarui'
+        ], 200);
+    }
+
+
 
 
 }

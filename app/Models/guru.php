@@ -39,6 +39,12 @@ class guru extends Authenticatable
         return $this->hasMany(santri::class);
     }
 
+    public function addedSantris()
+    {
+        return $this->hasMany(santri::class, 'id_ust', 'id');
+    }
+
+
 
 }
 

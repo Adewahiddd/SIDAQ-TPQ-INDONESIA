@@ -43,5 +43,9 @@ class santri extends Authenticatable
         return $this->belongsTo(User::class);
     }
 
-
+    public function ustad()
+    {
+        return $this->belongsTo(guru::class, 'id_ust', 'id');
+    }
+    
 }
