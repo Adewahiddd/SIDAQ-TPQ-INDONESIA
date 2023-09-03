@@ -2,12 +2,10 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-use App\Models\guru;
 
 class User extends Authenticatable
 {
@@ -18,17 +16,16 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $primaryKey = 'id_masjid';
-
+    protected $primaryKey = 'id_user';
+    protected $table = 'users';
     protected $fillable = [
-        'nama_masjid',
-        'gambar',
-        'role',
+        'name',
         'email',
         'password',
-        'provinsi',
-        'kabupaten',
-        'alamat_masjid',
+        'role',
+        'id_admin',
+        'id_ustadz',
+        'id_santri',
     ];
 
     /**
@@ -50,25 +47,38 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    public function hasAnyRole($roles)
+    {
+        if (is_array($roles)) {
+            return $this->role && in_array($this->role, $roles);
+        }
 
-    // public function hasAnyRole($roles)
+        return $this->role && $this->role == $roles;
+    }
+
+    // public function hasAnyRole(...$roles)
     // {
-    //     if (is_array($roles)) {
-    //         return $this->role && in_array($this->role, $roles);
-    //     }
-
-    //     return $this->role && $this->role == $roles;
+    //     return in_array($this->role, $roles);
     // }
 
-    public function roles()
+
+    public function profileSantri()
     {
-        return $this->belongsToMany(Role::class);
+        return $this->hasOne(ProfileSantri::class, 'id_user', 'id_user');
     }
 
-    public function gurus()
+    public function amalSholeh()
     {
-        return $this->hasMany(guru::class, 'id_user'); // Hubungkan ke model Guru dengan foreign key id_user
+        return $this->hasOne(AmalSholeh::class, 'id_ustadz');
     }
+
+
+
+
+
+
+
+
 
 
 

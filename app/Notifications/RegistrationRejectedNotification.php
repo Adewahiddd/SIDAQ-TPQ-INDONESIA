@@ -16,7 +16,7 @@ class RegistrationRejectedNotification extends Notification
      */
 
     protected $user;
-    
+
     public function __construct($user)
     {
         $this->user = $user;

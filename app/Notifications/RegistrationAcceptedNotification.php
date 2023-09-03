@@ -10,7 +10,7 @@ use Illuminate\Notifications\Notification;
 class RegistrationAcceptedNotification extends Notification
 {
     use Queueable;
-    
+
     /**
      * Create a new notification instance.
      */

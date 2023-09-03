@@ -7,8 +7,4 @@ use Illuminate\Http\Request;
 class HafalanController extends Controller
 {
     //
-
- 
-
-
 }

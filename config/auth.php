@@ -40,33 +40,16 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
         'api' => [
             'driver' => 'passport',
             'provider' => 'users',
         ],
-        'api-guru' => [
-            'driver' => 'passport',
-            'provider' => 'gurus',
-        ],
-        'api-santri' => [
-            'driver' => 'passport',
-            'provider' => 'santris',
-        ],
 
-        'user' => [
-            'driver' => 'session',
-            'provider' => 'users',
-        ],
-
-        'guru' => [
-            'driver' => 'session',
-            'provider' => 'gurus',
-        ],
-
-        'santri' => [
-            'driver' => 'session',
-            'provider' => 'santris',
-        ],
+        // 'api' => [
+        //     'driver' => 'token',
+        //     'provider' => 'users_id', // Menggunakan 'users_id' sebagai provider
+        // ],
     ],
 
     /*
@@ -90,17 +73,14 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+            'column' => 'id_user',
         ],
 
-        'gurus' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\guru::class,
-        ],
+        // 'users' => [
+        //     'driver' => 'database',
+        //     'table' => 'users',
+        // ],
 
-        'santris' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\santri::class,
-        ],
     ],
 
     /*
