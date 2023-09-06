@@ -56,21 +56,17 @@ class User extends Authenticatable
         return $this->role && $this->role == $roles;
     }
 
-    // public function hasAnyRole(...$roles)
-    // {
-    //     return in_array($this->role, $roles);
-    // }
-
 
     public function profileSantri()
     {
         return $this->hasOne(ProfileSantri::class, 'id_user', 'id_user');
     }
 
-    public function amalSholeh()
+    public function amalSholehs()
     {
-        return $this->hasOne(AmalSholeh::class, 'id_ustadz');
+        return $this->hasMany(AmalSholeh::class, 'id_santri');
     }
+
 
 
 

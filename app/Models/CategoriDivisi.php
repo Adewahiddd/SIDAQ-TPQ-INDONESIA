@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CategoriAbsensi extends Model
+class CategoriDivisi extends Model
 {
     use HasFactory;
 
-    protected $primaryKey = 'id_categoriabsen';
+    protected $primaryKey = 'id_divisi';
     protected $fillable = [
         'id_admin',
-        'kategori',
+        'divisi',
     ];
 }

@@ -16,10 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_ustadz');
             $table->unsignedBigInteger('id_santri');
             $table->string('waktu');
-            $table->boolean('hadir')->default(false);
-            $table->boolean('alpha')->default(false);
-            $table->boolean('izin')->default(false);
-            $table->boolean('sakit')->default(false);
+            $table->string('keterangan');
             $table->timestamps();
 
             $table->foreign('id_ustadz')->references('id_user')->on('users')->onDelete('cascade');

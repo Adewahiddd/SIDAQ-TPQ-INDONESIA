@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AmalSholeh;
 use App\Models\ProfileSantri;
 use App\Models\Santri;
 use App\Models\User;
@@ -11,17 +12,29 @@ use Illuminate\Support\Facades\Validator;
 
 class SantriController extends Controller
 {
+// get jumlah santri by provinsi
+    public function index()
+    {
+        $inputanPerProvinsi = ProfileSantri::select('provinsi')
+            ->selectRaw('count(*) as total')
+            ->groupBy('provinsi')
+            ->get();
+
+        return view('inputan.index', compact('inputanPerProvinsi'));
+    }
+
+
     public function registersantri(Request $request)
     {
         $ustadz = Auth::user();
-        // Check if the ustadz has reached the limit of adding santri
-        // $santriCount = User::where('id_ustadz', $ustadz->id_ustadz)
-        // ->where('role', 'santri_pondok')
-        // ->count();
+    // Check if the ustadz has reached the limit of adding santri
+        $santriCount = User::where('id_ustadz', $ustadz->id_ustadz)
+        ->where('role', 'santri_pondok')
+        ->count();
 
-        // if ($santriCount >= 10) {
-        //     return response()->json(['error' => 'You have reached the limit of adding santri'], 400);
-        // }
+        if ($santriCount >= 10) {
+            return response()->json(['error' => 'You have reached the limit of adding santri'], 400);
+        }
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:255',
@@ -102,32 +115,145 @@ class SantriController extends Controller
 
         return response()->json(['user' => $user, 'token' => $token], 200);
     }
-
-
-    public function getSantriByAdminId(Request $request)
+// DELETE SANTRI
+    public function deleteSantri($id_santri)
     {
-        $adminUser = Auth::user();
+        $user = User::where('id_santri', $id_santri)->first();
 
-        // Ambil ID admin dari user yang terautentikasi
-        $idAdmin = $adminUser->id_admin;
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
 
-        // Ambil semua data santri yang memiliki role "santri_pondok" dan id_admin yang sama dengan id_admin admin yang terautentikasi
-        $santriUserIds = User::join('profile_santris', 'users.id_santri', '=', 'profile_santris.id_santri')
-                            ->where('users.id_admin', $idAdmin)
-                            ->where('users.role', 'santri_pondok')
-                            ->pluck('users.id_santri');
+        // Check if the authenticated user is the same ustadz who registered the santri
+        $authenticatedUser = auth()->user();
 
-        $santriUserDetails = User::whereIn('id_santri', $santriUserIds)
-                            ->get(['id_santri', 'name', 'email', 'role']);
+        // Pastikan bahwa yang ingin menghapus adalah ustadz dan id_ustadz-nya sesuai dengan yang mendaftarkan santri
+        if ($authenticatedUser->role !== 'ust_pondok' || $authenticatedUser->id_ustadz !== $user->id_ustadz) {
+            return response()->json(['error' => 'Only the ustadz who registered the santri can delete it'], 403);
+        }
 
-        $santriProfileDetails = ProfileSantri::whereIn('id_santri', $santriUserIds)
-                            ->get(['id_santri', 'gambar', 'tgl_lahir', 'gender', 'angkatan']);
+        // Delete the associated profile and user
+        ProfileSantri::where('id_santri', $id_santri)->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Santri deleted successfully'], 200);
+    }
+
+
+
+
+// get santri berdasarkan id admin atau atau admin_pondok
+    public function getSantriByAdminId($id_admin)
+    {
+        // Periksa apakah id_admin adalah angka positif
+        if (!is_numeric($id_admin) || $id_admin <= 0) {
+            return response()->json(['error' => 'Invalid id_admin'], 400);
+        }
+
+        // Cari admin dengan id_admin yang sesuai
+        $admin = User::where('id_admin', $id_admin)
+            ->where('role', 'admin_pondok')
+            ->first();
+
+        if (!$admin) {
+            return response()->json(['error' => 'Admin not found for this id_admin'], 404);
+        }
+
+        // Cari santri dengan id_admin yang sesuai
+        $santri = User::where('id_admin', $id_admin)
+            ->where('role', 'santri_pondok')
+            ->get();
+
+        if ($santri->isEmpty()) {
+            return response()->json(['error' => 'No santri found for this id_admin'], 404);
+        }
+
+        // Tampilkan data santri
+        $santri_user_details = $santri->map(function ($item) {
+            return [
+                'id_santri' => $item->id_santri,
+                'name' => $item->name,
+                'email' => $item->email,
+                'role' => $item->role,
+            ];
+        });
+
+        $santri_profile_details = $santri->map(function ($item) {
+            $profile = $item->profileSantri;
+
+            // Menghapus properti yang tidak ingin ditampilkan
+            unset($profile->provinsi);
+            unset($profile->kabupaten);
+            unset($profile->alamat_masjid);
+            unset($profile->verifikasi);
+            unset($profile->id_profile);
+            unset($profile->id_user);
+
+            return $profile;
+        });
 
         return response()->json([
-            'santri_user_details' => $santriUserDetails,
-            'santri_profile_details' => $santriProfileDetails
-            ], 200);
+            'santri_user_details' => $santri_user_details,
+            'santri_profile_details' => $santri_profile_details,
+        ], 200);
+
     }
+
+    // 'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+// Update Fundraising (Santri)
+    public function updateFundraising(Request $request, $id_amal)
+    {
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'fundraising' => 'required|string',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        $user = Auth::user();
+
+        // Pastikan pengguna adalah ustadz
+        if (!$user || $user->role !== 'santri_pondok') {
+            return response()->json(['error' => 'Tidak Diotorisasi'], 401);
+        }
+
+        // Temukan rekaman AmalSholeh berdasarkan id_amal
+        $amalSholeh = AmalSholeh::find($id_amal);
+            // dd($id_amal);
+        if (!$amalSholeh) {
+            return response()->json(['error' => 'Amal Sholeh tidak ditemukan'], 404);
+        }
+
+        // Update kolom 'fundraising'
+        $amalSholeh->fundraising = $request->fundraising;
+        $amalSholeh->save();
+
+        // Mengelola gambar jika disediakan
+        if ($request->hasFile('gambar')) {
+            $gambar = $request->file('gambar');
+            $gambarPath = 'images/poto-fundraising/' . $user->id_santri . '.' . $gambar->getClientOriginalExtension();
+
+            // Hapus gambar sebelumnya jika ada
+            if ($amalSholeh->gambar && file_exists(public_path($amalSholeh->gambar))) {
+                unlink(public_path($amalSholeh->gambar));
+            }
+
+            $gambar->move(public_path('images/poto-fundraising'), $gambarPath);
+            $amalSholeh->gambar = $gambarPath;
+            $amalSholeh->save();
+        }
+
+        return response()->json(['message' => 'Amal Sholeh santri berhasil diupdate', 'santri' => $user->name, 'amalSholeh' => $amalSholeh], 200);
+    }
+
+
+
+
+
+
 
 
 

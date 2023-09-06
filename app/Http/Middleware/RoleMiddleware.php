@@ -14,28 +14,42 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, ...$roles)
+    // public function handle(Request $request, Closure $next, ...$roles)
+    // {
+    //     $user = Auth::user();
+
+    //     if (!$user || !$user->hasAnyRole($roles)) {
+    //         // dd(!$user->hasAnyRole($roles));
+    //         return response()->json(['message' => 'Maaf, kamu tidak memiliki izin untuk mengakses halaman ini'], 403);
+    //     }
+
+    //     return $next($request);
+    // }
+
+
+    public function handle($request, Closure $next, ...$roles)
     {
-        $user = Auth::user();
+        $user = $request->user();
 
         if (!$user || !$user->hasAnyRole($roles)) {
-            return response()->json(['message' => 'Maaf, kamu tidak memiliki izin untuk mengakses halaman ini'], 403);
+
+            return response()->json(['error' => 'Maaf, kamu tidak memiliki izin untuk mengakses halaman ini'], 401);
         }
 
         return $next($request);
     }
 
-    // public function handle($request, Closure $next, ...$roles)
-    // {
-    //     $user = $request->user();
 
-    //     if (!$user || !$user->hasAnyRole(...$roles)) {
-    //         dd($roles);
-    //         return response()->json(['error' => 'Maaf, kamu tidak memiliki izin untuk mengakses halaman ini'], 401);
+    // public function handle($request, Closure $next)
+    // {
+    //     // Periksa apakah pengguna sudah terautentikasi (logged in)
+    //     if (Auth::check()) {
+    //         return $next($request);
     //     }
 
-    //     return $next($request);
+    //     return response()->json(['message' => 'Maaf, kamu tidak memiliki izin untuk mengakses halaman ini'], 403);
     // }
+
 
 
 }

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('hafalans', function (Blueprint $table) {
             $table->id('id_hafalan');
-            $table->unsignedBigInteger('id_ustadz')->nullable();
-            $table->unsignedBigInteger('id_santri')->nullable();
+            $table->unsignedBigInteger('id_ustadz');
+            $table->unsignedBigInteger('id_santri');
             $table->date('tanggal');
             $table->string('surah');
             $table->integer('jumlah_ayat');

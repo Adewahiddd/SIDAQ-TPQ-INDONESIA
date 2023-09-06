@@ -2,15 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Masjid;
 use App\Models\ProfileSantri;
 use App\Models\User;
 use App\Notifications\RegistrationAcceptedNotification;
 use App\Notifications\RegistrationRejectedNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -119,10 +116,12 @@ class AuthController extends Controller
             } elseif ($role === 'staff_pondok') {
                 $tokenName = 'Staff Pondok Token';
                 $token = $user->createToken($tokenName)->accessToken;
-            } elseif ($role === 'staff_ust') {
-                $tokenName = 'Staff Ust Token';
-                $token = $user->createToken($tokenName)->accessToken;
-            } else {
+            }
+            // elseif ($role === 'staff_ust') {
+            //     $tokenName = 'Staff Ust Token';
+            //     $token = $user->createToken($tokenName)->accessToken;
+            //}
+            else {
                 $tokenName = 'User Token';
             }
 
@@ -144,81 +143,87 @@ class AuthController extends Controller
 
 
 // Update Profile Admin Pusat & Poondok
-public function updateProfile(Request $request, $id_admin)
-{
-    $validator = Validator::make($request->all(), [
-        'name' => 'required|max:255',
-        'email' => 'required|email|unique:users,email,' . $id_admin . ',id_admin',
-        'role' => 'required|string',
-        'gambar' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
-        'provinsi' => 'required|string',
-        'kabupaten' => 'required|string',
-        'alamat_masjid' => 'required|string',
-    ]);
+    public function updateProfile(Request $request, $id_admin)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:255',
+            'email' => 'required|email|unique:users,email,' . $id_admin . ',id_admin',
+            'role' => 'required|string',
+            'gambar' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
+            'provinsi' => 'required|string',
+            'kabupaten' => 'required|string',
+            'alamat_masjid' => 'required|string',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json(['errors' => $validator->errors()], 400);
-    }
-
-    $user = User::where('id_admin', $id_admin)->firstOrFail();
-
-    // Update user attributes
-    $user->name = $request->name;
-    $user->email = $request->email;
-    $user->role = $request->role;
-    $user->save();
-
-    $profileSantri = ProfileSantri::where('id_admin', $id_admin)->firstOrFail();
-
-    // Update profile attributes
-    $profileSantri->provinsi = $request->provinsi;
-    $profileSantri->kabupaten = $request->kabupaten;
-    $profileSantri->alamat_masjid = $request->alamat_masjid;
-
-    // Update gambar if provided
-    if ($request->hasFile('gambar')) {
-        // Cek apakah ada gambar sebelumnya
-        if ($user->profileSantri && !empty($user->profileSantri->gambar)) {
-            // Hapus gambar sebelumnya
-            if (file_exists(public_path($user->profileSantri->gambar))) {
-                unlink(public_path($user->profileSantri->gambar));
-            }
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
         }
 
-        $gambar = $request->file('gambar');
-        $gambarPath = 'images/poto-masjid/' . $user->id_admin . '.' . $gambar->getClientOriginalExtension();
-        $gambar->move(public_path('images/poto-masjid'), $gambarPath);
-        $profileSantri->gambar = $gambarPath;
+        $user = User::where('id_admin', $id_admin)->firstOrFail();
+
+        // Update user attributes
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->role = $request->role;
+        $user->save();
+
+        $profileSantri = ProfileSantri::where('id_admin', $id_admin)->firstOrFail();
+
+        // Update profile attributes
+        $profileSantri->provinsi = $request->provinsi;
+        $profileSantri->kabupaten = $request->kabupaten;
+        $profileSantri->alamat_masjid = $request->alamat_masjid;
+
+        // Update gambar if provided
+        if ($request->hasFile('gambar')) {
+            // Cek apakah ada gambar sebelumnya
+            if ($user->profileSantri && !empty($user->profileSantri->gambar)) {
+                // Hapus gambar sebelumnya
+                if (file_exists(public_path($user->profileSantri->gambar))) {
+                    unlink(public_path($user->profileSantri->gambar));
+                }
+            }
+
+            $gambar = $request->file('gambar');
+            $gambarPath = 'images/poto-masjid/' . $user->id_admin . '.' . $gambar->getClientOriginalExtension();
+            $gambar->move(public_path('images/poto-masjid'), $gambarPath);
+            $profileSantri->gambar = $gambarPath;
+        }
+
+        // Save the updated profile
+        $profileSantri->save();
+
+        // Return response
+        return response()->json(['user' => $user, 'profile' => $profileSantri], 200);
     }
-
-    // Save the updated profile
-    $profileSantri->save();
-
-    // Return response
-    return response()->json(['user' => $user, 'profile' => $profileSantri], 200);
-}
 
 
 
 // verifikas
-    public function processUserVerification($id_profile, Request $request)
+    public function processUserVerification(Request $request, $id_admin)
     {
         $request->validate([
             'action' => 'required|in:accept,reject',
         ]);
 
-        $profileSantri = ProfileSantri::findOrFail($id_profile);
+        // Cari admin pondok dengan $id_admin
+        $admin = ProfileSantri::where('id_admin', $id_admin)->first();
+
+        // Pastikan hanya admin pusat yang dapat melakukan verifikasi
+        if (auth()->user()->role !== 'admin_pusat') {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
 
         if ($request->action === 'accept') {
-            $profileSantri->verifikasi = true;
-            $profileSantri->save();
-            $profileSantri->user->notify(new RegistrationAcceptedNotification($profileSantri->user));
-            $message = 'User accepted successfully';
+            // Ubah nilai 'verifikasi' menjadi true (1)
+            $admin->verifikasi = true;
+            $admin->save();
+            $message = 'Admin accepted successfully';
         } elseif ($request->action === 'reject') {
-            $profileSantri->verifikasi = false;
-            $profileSantri->save();
-            $profileSantri->user->notify(new RegistrationRejectedNotification($profileSantri->user));
-            $message = 'User rejected successfully';
+            // Ubah nilai 'verifikasi' menjadi false (0)
+            $admin->verifikasi = false;
+            $admin->save();
+            $message = 'Admin rejected successfully';
         } else {
             return response()->json(['error' => 'Invalid action'], 400);
         }
@@ -228,66 +233,30 @@ public function updateProfile(Request $request, $id_admin)
 
 
 
-    // public function processUserVerification($id_user, Request $request)
-    // {
-    //     $request->validate([
-    //         'action' => 'required|in:accept,reject',
-    //     ]);
-
-    //     $user = User::find($id_user);
-
-    //     if (!$user) {
-    //         return response()->json(['error' => 'User not found'], 404);
-    //     }
-
-    //     $profileSantri = $user->profileSantri;
-
-    //     if (!$profileSantri) {
-    //         return response()->json(['error' => 'Profile not found'], 404);
-    //     }
-
-    //     if ($request->action === 'accept') {
-    //         $profileSantri->verifikasi = 'true'; // Ubah menjadi string 'true'
-    //         $profileSantri->save();
-    //         // Lakukan notifikasi atau tindakan lainnya
-    //         $message = 'User accepted successfully';
-    //     } elseif ($request->action === 'reject') {
-    //         $profileSantri->verifikasi = 'false'; // Ubah menjadi string 'false'
-    //         $profileSantri->save();
-    //         // Lakukan notifikasi atau tindakan lainnya
-    //         $message = 'User rejected successfully';
-    //     } else {
-    //         return response()->json(['error' => 'Invalid action'], 400);
-    //     }
-
-    //     return response()->json(['message' => $message], 200);
-    // }
-
-
-// get Admin pondok
-    public function indexprofileadmin()
+// get Admin Pusat untuk Profile
+    public function indexprofileadminPusat()
     {
         $loggedInUser = Auth::user(); // Mengambil informasi pengguna yang masuk
+        $adminProfile = null;
 
-        if ($loggedInUser->role === 'admin_pondok') {
+        if ($loggedInUser->role === 'admin_pusat' || $loggedInUser->role === 'admin_pondok') {
+            // Kode untuk admin_pondok atau admin_pusat
             $adminProfile = ProfileSantri::where('id_admin', $loggedInUser->id_admin)
-                ->select('id_admin', 'provinsi', 'kabupaten', 'alamat_masjid')
+                ->select('id_admin', 'gambar', 'provinsi', 'kabupaten', 'alamat_masjid')
                 ->first();
+        }
 
-            if ($adminProfile) {
-                return response()->json([
-                    'admin_profile' => $adminProfile,
-                    'user_details' => [
-                        'name' => $loggedInUser->name,
-                        'email' => $loggedInUser->email,
-                        'role' => $loggedInUser->role,
-                    ],
-                ], 200);
-            } else {
-                return response()->json(['message' => 'Profil admin tidak ditemukan'], 404);
-            }
+        if ($adminProfile) {
+            return response()->json([
+                'user_details' => [
+                    'name' => $loggedInUser->name,
+                    'email' => $loggedInUser->email,
+                    'role' => $loggedInUser->role,
+                ],
+                'admin_profile' => $adminProfile,
+            ], 200);
         } else {
-            return response()->json(['message' => 'Maaf, kamu tidak memiliki izin untuk mengakses profil ini'], 403);
+            return response()->json(['message' => 'Profil admin tidak ditemukan atau Anda tidak memiliki izin untuk mengakses profil ini'], 403);
         }
     }
 
@@ -328,10 +297,48 @@ public function updateProfile(Request $request, $id_admin)
     }
 
 
+// get semua role admin_pondok
+    public function indexprofileadminPondok()
+    {
+        $adminUsers = User::where('role', 'admin_pondok')->select('id_admin', 'name', 'email')->get();
+
+        if ($adminUsers->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada admin_pondok yang ditemukan'], 404);
+        }
+
+        $adminProfiles = ProfileSantri::whereIn('id_admin', $adminUsers->pluck('id_admin'))
+            ->select('id_admin', 'gambar', 'provinsi', 'kabupaten', 'alamat_masjid')
+            ->get();
+
+        $response = [];
+        foreach ($adminUsers as $adminUser) {
+            $adminProfile = $adminProfiles->where('id_admin', $adminUser->id_admin)->first();
+
+            if ($adminProfile) {
+                $response[] = [
+                    'id_admin' => $adminUser->id_admin,
+                    'name' => $adminUser->name,
+                    'email' => $adminUser->email,
+                    'gambar' => $adminProfile->gambar,
+                    'provinsi' => $adminProfile->provinsi,
+                    'kabupaten' => $adminProfile->kabupaten,
+                    'alamat_masjid' => $adminProfile->alamat_masjid,
+                ];
+            }
+        }
+
+        return response()->json(['admin_profiles' => $response], 200);
+    }
 
 
 
 
+    public function logout(Request $request)
+    {
+        $request->user()->token()->revoke();
+
+        return response()->json(['message' => 'Successfully logged out']);
+    }
 
 
 

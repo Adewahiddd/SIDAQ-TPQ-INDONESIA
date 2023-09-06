@@ -11,6 +11,33 @@ use Illuminate\Support\Facades\Validator;
 
 class UstadzController extends Controller
 {
+// index get profile ustadz
+    public function indexProfileUstadz()
+    {
+        $ustadzUsers = User::where('role', 'ust_pondok')->get();
+
+        $response = [];
+        foreach ($ustadzUsers as $ustadzUser) {
+            $ustadzProfile = ProfileSantri::where('id_ustadz', $ustadzUser->id_ustadz)->first();
+
+            if ($ustadzProfile) {
+                $response[] = [
+                    'id_user' => $ustadzUser->id_user,
+                    'id_admin' => $ustadzProfile->id_admin,
+                    'id_ustadz' => $ustadzProfile->id_ustadz,
+                    'name' => $ustadzUser->name,
+                    'email' => $ustadzUser->email,
+                    'gambar' => $ustadzProfile->gambar,
+                    'tgl_lahir' => $ustadzProfile->tgl_lahir,
+                    'gender' => $ustadzProfile->gender,
+                ];
+            }
+        }
+
+        return response()->json(['ustadz_profiles' => $response], 200);
+    }
+
+// register ustadz
     public function registerustadz(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -84,10 +111,33 @@ class UstadzController extends Controller
 
         return response()->json(['user' => $user, 'token' => $token], 200);
     }
-// get Ustadz
-    public function getUstadzByAdminId(Request $request)
+// DELETE USTADZ
+    public function deleteUstadz($id_ustadz)
+    {
+        $user = User::where('id_ustadz',$id_ustadz)->first();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        $authenticatedUser = auth()->user();
+
+        if ($authenticatedUser->role !== 'admin_pondok' || $authenticatedUser->id_admin !== $user->id_admin) {
+            return response()->json(['error' => 'Only the ustadz who registered the santri can delete it'], 403);
+        }
+
+        // Delete the associated profile and user
+        ProfileSantri::where('id_ustadz', $id_ustadz)->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Ustadz deleted successfully'], 200);
+    }
+
+
+// get Ustadz by id punya (inputan punya admin_pondok)
+    public function getUstadzByAdminId(Request $request, $id_admin)
         {
-            $adminUser = Auth::user();
+            $adminUser = ProfileSantri::where('id_admin', $id_admin)->first();
 
             // Get the admin's ID from the authenticated user
             $idAdmin = $adminUser->id_admin;
@@ -113,6 +163,7 @@ class UstadzController extends Controller
                 'ustadz_profile_details' => $ustadzProfileDetails
             ], 200);
         }
+
 
 // get jumlah ustadz
     public function getTotalUstadzByAdminId(Request $request)
@@ -140,15 +191,19 @@ class UstadzController extends Controller
         // Get the admin's ID from the authenticated user
         $idAdmin = $adminUser->id_admin;
 
-        // Get the total count of "ust_pondok" users with the same admin ID and role
-        $totalUstadz = User::where('id_admin', $idAdmin)
+        // Get the total count of "santri_pondok" users with the same id_admin
+        $totalSantri = User::where('id_admin', $idAdmin)
                         ->where('role', 'santri_pondok')
                         ->count();
 
         return response()->json([
-            'total_ustadz' => $totalUstadz
+            'total_santri' => $totalSantri
         ], 200);
     }
+
+
+
+
 
 
 }

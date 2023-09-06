@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('kemampuans', function (Blueprint $table) {
             $table->id('id_kemampuan');
-            $table->unsignedBigInteger('id_ustadz')->nullable();
-            $table->unsignedBigInteger('id_santri')->nullable();
-            $table->integer('khidmat');
-            $table->integer('leadership');
-            $table->integer('enterpreneur');
-            $table->integer('speaking');
-            $table->integer('operation');
-            $table->integer('mengajar');
-            $table->integer('admiristation');
+            $table->unsignedBigInteger('id_ustadz');
+            $table->unsignedBigInteger('id_santri');
+            $table->integer('khidmat')->nullable();
+            $table->integer('leadership')->nullable();
+            $table->integer('enterpreneur')->nullable();
+            $table->integer('speaking')->nullable();
+            $table->integer('operation')->nullable();
+            $table->integer('mengajar')->nullable();
+            $table->integer('admiristation')->nullable();
             $table->timestamps();
 
             $table->foreign('id_ustadz')->references('id_user')->on('users')->onDelete('cascade');

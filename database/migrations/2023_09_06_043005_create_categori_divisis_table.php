@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categori_absensis', function (Blueprint $table) {
-            $table->id('id_categoriabsen');
+        Schema::create('categori_divisis', function (Blueprint $table) {
+            $table->id('id_divisi');
             $table->unsignedBigInteger('id_admin');
-            $table->string('kategori');
+            $table->string('divisi');
             $table->timestamps();
 
             $table->foreign('id_admin')->references('id_user')->on('users')->onDelete('cascade');
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categori_absensis');
+        Schema::dropIfExists('categori_divisis');
     }
 };

@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categori_roles', function (Blueprint $table) {
-            $table->id();
+        Schema::create('categori_kegiatans', function (Blueprint $table) {
+            $table->id('id_kegiatan');
             $table->unsignedBigInteger('id_admin');
-            $table->string('name');
+            $table->string('kegiatan');
             $table->timestamps();
 
             $table->foreign('id_admin')->references('id_user')->on('users')->onDelete('cascade');
-        
         });
     }
 
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categori_roles');
+        Schema::dropIfExists('categori_kegiatans');
     }
 };
