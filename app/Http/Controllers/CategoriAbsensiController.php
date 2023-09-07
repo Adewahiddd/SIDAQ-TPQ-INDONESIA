@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\CategoriAbsensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,31 +17,41 @@ class CategoriAbsensiController extends Controller
         return response()->json(['categories' => $categories], 200);
     }
 
-    public function create(Request $request)
+    public function Createcategori(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kategori' => 'required',
+            'kategori' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
+        // Ambil data user yang terautentikasi (pengguna yang login)
+        $user = auth()->user();
+
+        if (!$user || $user->role !== 'admin_pondok') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
         $categoriAbsen = CategoriAbsensi::create([
+            'id_admin' => $user->id_user, // Menggunakan id_user dari pengguna yang terautentikasi
             'kategori' => $request->kategori,
         ]);
 
-        $categoriAbsen->save();
-
         return response()->json(['user' => $categoriAbsen], 200);
-
     }
+
 
     public function update(Request $request, $id_categoriabsen)
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'kategori' => 'required',
+            'kategori' => 'required|string',
         ]);
 
         if ($validator->fails()) {

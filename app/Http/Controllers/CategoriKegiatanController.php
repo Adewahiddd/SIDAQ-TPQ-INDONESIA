@@ -19,14 +19,25 @@ class CategoriKegiatanController extends Controller
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kegiatan' => 'required',
+            'kegiatan' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
 
+        $user = auth()->user();
+
+        if (!$user || $user->role !== 'admin_pondok') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
         $kegiatan = CategoriKegiatan::create([
+            'id_admin' => $user->id_user,
             'kegiatan' => $request->kegiatan,
         ]);
 
@@ -40,7 +51,7 @@ class CategoriKegiatanController extends Controller
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'kegiatan' => 'required',
+            'kegiatan' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -55,7 +66,7 @@ class CategoriKegiatanController extends Controller
         }
 
         // Update kategori Kegiatan
-        $kegiatan->kategori = $request->kategori;
+        $kegiatan->kegiatan = $request->kegiatan;
         $kegiatan->save();
 
         return response()->json(['user' => $kegiatan], 200);

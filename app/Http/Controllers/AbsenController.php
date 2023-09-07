@@ -64,13 +64,13 @@ class AbsenController extends Controller
     public function countSantriByIndex(Request $request)
     {
         // Ambil index waktu dan keterangan dari request
-        $indexWaktu = $request->input('index_waktu');
-        $indexKeterangan = $request->input('index_keterangan');
+        $indexWaktu = $request->input('waktu');
+        $indexKeterangan = $request->input('keterangan');
 
         // Hitung jumlah keterangan persantri berdasarkan waktu
         $jumlahKeterangan = Absen::join('categori_kegiatan', 'absen.waktu', '=', 'categori_kegiatan.kegiatan')
             ->join('categori_absensi', 'absen.keterangan', '=', 'categori_absensi.keterangan')
-            ->where('categori_kegiatan.index_waktu', $indexWaktu)
+            ->where('categori_kegiatan.waktu', $indexWaktu)
             ->count();
 
         return response()->json(['jumlah Keterangan' => $jumlahKeterangan], 200);

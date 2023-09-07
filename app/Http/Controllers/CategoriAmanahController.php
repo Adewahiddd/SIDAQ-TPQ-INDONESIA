@@ -19,14 +19,24 @@ class CategoriAmanahController extends Controller
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'amanah' => 'required',
+            'amanah' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
         }
+        // Ambil data user yang terautentikasi (pengguna yang login)
+        $user = auth()->user();
 
+        if (!$user || $user->role !== 'admin_pondok') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
         $amanah = CategoriAmanah::create([
+            'id_admin' => $user->id_user, // Menggunakan id_user dari pengguna yang terautentikasi
             'amanah' => $request->amanah,
         ]);
 
@@ -40,7 +50,7 @@ class CategoriAmanahController extends Controller
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'amanah' => 'required',
+            'amanah' => 'required|string',
         ]);
 
         if ($validator->fails()) {

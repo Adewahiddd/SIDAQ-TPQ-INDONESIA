@@ -8,6 +8,7 @@ use App\Models\Santri;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class SantriController extends Controller
@@ -115,12 +116,37 @@ class SantriController extends Controller
 
         return response()->json(['user' => $user, 'token' => $token], 200);
     }
-// DELETE SANTRI
+
+// DELETE SANTRI DARI DATA BASE
+    // public function deleteSantri($id_santri)
+    // {
+    //     $user = User::where('id_santri', $id_santri)->first();
+
+    //     if (!$user) {
+    //         return response()->json(['error' => 'User not found'], 404);
+    //     }
+
+    //     // Check if the authenticated user is the same ustadz who registered the santri
+    //     $authenticatedUser = auth()->user();
+
+    //     // Pastikan bahwa yang ingin menghapus adalah ustadz dan id_ustadz-nya sesuai dengan yang mendaftarkan santri
+    //     if ($authenticatedUser->role !== 'ust_pondok' || $authenticatedUser->id_ustadz !== $user->id_ustadz) {
+    //         return response()->json(['error' => 'Only the ustadz who registered the santri can delete it'], 403);
+    //     }
+
+    //     // Delete the associated profile and user
+    //     ProfileSantri::where('id_santri', $id_santri)->delete();
+    //     $user->delete();
+
+    //     return response()->json(['message' => 'Santri deleted successfully'], 200);
+    // }
+
+// HAPUS SANTRI DARI JUMLAH LIMIT USTADZ
     public function deleteSantri($id_santri)
     {
-        $user = User::where('id_santri', $id_santri)->first();
+        $santri = User::where('id_santri', $id_santri)->first();
 
-        if (!$user) {
+        if (!$santri) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
@@ -128,19 +154,28 @@ class SantriController extends Controller
         $authenticatedUser = auth()->user();
 
         // Pastikan bahwa yang ingin menghapus adalah ustadz dan id_ustadz-nya sesuai dengan yang mendaftarkan santri
-        if ($authenticatedUser->role !== 'ust_pondok' || $authenticatedUser->id_ustadz !== $user->id_ustadz) {
+        if ($authenticatedUser->role !== 'ust_pondok' || $authenticatedUser->id_ustadz !== $santri->id_ustadz) {
             return response()->json(['error' => 'Only the ustadz who registered the santri can delete it'], 403);
         }
 
-        // Delete the associated profile and user
-        ProfileSantri::where('id_santri', $id_santri)->delete();
-        $user->delete();
+        // Hapus santri dari batasan limit ustadz
+        $ustadz = User::where('id_ustadz', $santri->id_ustadz)->first();
 
-        return response()->json(['message' => 'Santri deleted successfully'], 200);
+        if ($ustadz) {
+            // Hitung jumlah santri yang dimiliki oleh ustadz
+            $santriCount = User::where('id_ustadz', $ustadz->id_ustadz)
+                ->where('role', 'santri_pondok')
+                ->count();
+
+            // Kurangi jumlah santri_count ustadz jika lebih dari 0
+            if ($santriCount > 10) {
+                $ustadz->santri_count = $santriCount - 1;
+                $ustadz->save();
+            }
+        }
+
+        return response()->json(['message' => 'Santri removed from the ustadz\'s limit'], 200);
     }
-
-
-
 
 // get santri berdasarkan id admin atau atau admin_pondok
     public function getSantriByAdminId($id_admin)
@@ -251,7 +286,102 @@ class SantriController extends Controller
 
 
 
+    // public function registersantrii(Request $request)
+    // {
+    //     // Membungkus seluruh operasi dalam transaksi
+    //     DB::beginTransaction();
 
+    //     try {
+    //         $ustadz = Auth::user();
+
+    //         // Check if the ustadz has reached the limit of adding santri
+    //         $santriCount = User::where('id_ustadz', $ustadz->id_ustadz)
+    //             ->where('role', 'santri_pondok')
+    //             ->count();
+
+    //         if ($santriCount >= 10) {
+    //             return response()->json(['error' => 'You have reached the limit of adding santri'], 400);
+    //         }
+
+    //         // Generate a unique ID for the new santri based on existing data
+    //         $maxIdSantriPondok = User::max('id_santri') ?? 0;
+    //         $newIdSantriPondok = $maxIdSantriPondok + 1;
+
+    //         // Validasi input
+    //         $validator = Validator::make($request->all(), [
+    //             'name' => 'required|max:255',
+    //             'email' => 'required|email|unique:users',
+    //             'password' => 'required|min:8',
+    //             'role' => 'required|string',
+    //             'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+    //             'tgl_lahir' => 'required|date_format:Y/m/d',
+    //             'gender' => 'required|string',
+    //             'angkatan' => 'required|string',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json(['errors' => $validator->errors()], 400);
+    //         }
+
+    //         $email = $request->email;
+
+    //         // Check if the email uses a valid domain
+    //         $allowedDomains = ['gmail.com', 'yahoo.com'];
+    //         $domain = substr(strrchr($email, "@"), 1);
+    //         if (!in_array($domain, $allowedDomains)) {
+    //             return response()->json(['error' => 'Email must use @gmail or @yahoo domain'], 400);
+    //         }
+
+    //         // Create a new user
+    //         $user = User::create([
+    //             'name' => $request->name,
+    //             'email' => $email,
+    //             'password' => bcrypt($request->password),
+    //             'role' => $request->role,
+    //             'id_admin' => $ustadz->id_admin,
+    //             'id_ustadz' => $ustadz->id_ustadz,
+    //             'id_santri' => $newIdSantriPondok,
+    //         ]);
+
+    //         // Mendapatkan ID user yang baru saja dibuat
+    //         $id_user = $user->id;
+
+    //         // Handle image upload
+    //         $gambar = $request->file('gambar');
+    //         if (!$gambar->isValid()) {
+    //             return response()->json(['error' => 'Invalid image file'], 400);
+    //         }
+
+    //         // Upload and save gambar
+    //         $gambarPath = 'images/poto-santri/' . $id_user . '.' . $gambar->getClientOriginalExtension();
+    //         $gambar->move(public_path('images/poto-santri'), $gambarPath);
+
+    //         // Create a new ProfileSantri
+    //         $profileSantri = ProfileSantri::create([
+    //             'id_ustadz' => $ustadz->id_ustadz,
+    //             'id_santri' => $newIdSantriPondok,
+    //             'id_user' => $id_user, // Menggunakan ID user yang baru saja dibuat
+    //             'gambar' => $gambarPath,
+    //             'tgl_lahir' => $request->tgl_lahir,
+    //             'gender' => $request->gender,
+    //             'angkatan' => $request->angkatan,
+    //         ]);
+
+    //         // Commit transaksi jika semua operasi berhasil
+    //         DB::commit();
+
+    //         // Create and return access token
+    //         $token = $user->createToken('API Token')->accessToken;
+
+    //         return response()->json(['user' => $user, 'token' => $token], 200);
+    //     } catch (\Exception $e) {
+    //         // Rollback transaksi jika terjadi kesalahan
+    //         DB::rollback();
+
+    //         // Handle kesalahan dengan mengembalikan pesan error
+    //         return response()->json(['error' => 'Failed to register santri. ' . $e->getMessage()], 500);
+    //     }
+    // }
 
 
 

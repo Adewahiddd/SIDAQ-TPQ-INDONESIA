@@ -3,6 +3,10 @@
 use App\Http\Controllers\AbsenController;
 use App\Http\Controllers\AmalSholehController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CategoriAbsensiController;
+use App\Http\Controllers\CategoriAmanahController;
+use App\Http\Controllers\CategoriDivisiController;
+use App\Http\Controllers\CategoriKegiatanController;
 use App\Http\Controllers\HafalanController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\UstadzController;
@@ -80,22 +84,26 @@ Route::middleware(['auth:api', 'role:admin_pondok'])->group(function () {
     Route::get('getSantriByAdminId/{id}',[SantriController::class,'getSantriByAdminId']);
 
     Route::get('getTotalSantriByAdminId/{id}',[UstadzController::class,'getTotalSantriByAdminId']);
+
 // Categori Absen
-    Route::post('Createcategori', [CategoriAbsensiController::class, 'create']);
-    Route::put('Updatecategori', [CategoriAbsensiController::class, 'update']);
-    Route::delete('Deletecategori', [CategoriAbsensiController::class, 'destroy']);
+    Route::post('Create/kategori', [CategoriAbsensiController::class, 'Createcategori']);
+    Route::put('Updatecategori/{id}', [CategoriAbsensiController::class, 'update']);
+    Route::delete('Deletecategori/{id}', [CategoriAbsensiController::class, 'destroy']);
+
 // Categori Amanah
-    Route::post('Createcategori', [CategoriAmanahController::class, 'create']);
-    Route::put('Updatecategori', [CategoriAmanahController::class, 'update']);
-    Route::delete('Deletecategori', [CategoriAmanahController::class, 'destroy']);
+    Route::post('CreateAmanah', [CategoriAmanahController::class, 'create']);
+    Route::put('UpdateAmanah/{id}', [CategoriAmanahController::class, 'update']);
+    Route::delete('DeleteAmanah/{id}', [CategoriAmanahController::class, 'destroy']);
+
 // Categori Kegiatan
     Route::post('Createkegiatan', [CategoriKegiatanController::class, 'create']);
-    Route::put('Updatekegiatan', [CategoriKegiatanController::class, 'update']);
-    Route::delete('Deletekegiatan', [CategoriKegiatanController::class, 'destroy']);
+    Route::put('Updatekegiatan/{id}', [CategoriKegiatanController::class, 'update']);
+    Route::delete('Deletekegiatan/{id}', [CategoriKegiatanController::class, 'destroy']);
+
 // Categori Devisi
     Route::post('CreateDevisi', [CategoriDivisiController::class, 'create']);
-    Route::put('UpdateDevisi', [CategoriDivisiController::class, 'update']);
-    Route::delete('DeleteDevisi', [CategoriDivisiController::class, 'destroy']);
+    Route::put('UpdateDevisi/{id}', [CategoriDivisiController::class, 'update']);
+    Route::delete('DeleteDevisi/{id}', [CategoriDivisiController::class, 'destroy']);
 
 
 
@@ -106,7 +114,7 @@ Route::middleware(['auth:api', 'role:admin_pondok'])->group(function () {
 
 Route::middleware(['auth:api', 'role:ust_pondok'])->group(function () {
 // nge-registerin Santri
-    Route::post('register/santri',[SantriController::class,'registersantri']);
+    Route::post('register/santri',[SantriController::class,'registersantrii']);
     Route::delete('deleteSantri/{id_santri}', [SantriController::class, 'deleteSantri']);
 
 // Index Profile ustadz
