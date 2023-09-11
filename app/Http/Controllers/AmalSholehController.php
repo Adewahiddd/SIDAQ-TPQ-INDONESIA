@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AmalSholeh;
+use App\Models\CategoriAmanah;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -53,7 +54,7 @@ class AmalSholehController extends Controller
             'hafalan' => 'required|string',
             'mutqin' => 'required|string',
             'fundraising' => 'required|string',
-            'amanah' => 'required|string',
+            'name_amanah' => 'required|exists:categori_amanahs,name_amanah',
             'kedisiplinan' => 'required|string',
         ]);
 
@@ -63,29 +64,37 @@ class AmalSholehController extends Controller
 
         $user = Auth::user();
 
-        // Pastikan pengguna adalah ustadz
+        // Pastikan pengguna adalah 'ustadz'
         if ($user && $user->role === 'ust_pondok') {
-            // Cek apakah santri dengan id_santri yang dimaksud sudah terdaftar oleh ustadz
+            // Periksa apakah santri dengan 'id_santri' yang ditentukan terdaftar oleh ustadz
             $santri = User::where('id_santri', $id_santri)
                 ->where('id_ustadz', $user->id_ustadz)
                 ->first();
 
-            if ($santri) {
-                // Buat rekaman AmalSholeh baru untuk santri ini
-                $amalSholeh = AmalSholeh::create([
-                    'id_ustadz' => $user->id_ustadz,
-                    'id_santri' => $id_santri,
-                    'hafalan' => $request->hafalan,
-                    'mutqin' => $request->mutqin,
-                    'fundraising' => $request->fundraising,
-                    'amanah' => $request->amanah,
-                    'kedisiplinan' => $request->kedisiplinan,
-                ]);
-
-                return response()->json(['message' => 'Amal Sholeh santri berhasil dibuat', 'santri' => $santri->name, 'user' => $amalSholeh], 201);
-            } else {
+            if (!$santri) {
                 return response()->json(['error' => 'Santri tidak ditemukan atau tidak diotorisasi'], 401);
             }
+
+            $nameAmanah = $request->input('name_amanah');
+            $amanahEntry = CategoriAmanah::where('name_amanah', $nameAmanah)->first();
+
+            if (!$amanahEntry) {
+                return response()->json(['error' => 'Amanah not found'], 404);
+            }
+
+
+            // Buat catatan 'AmalSholeh' baru dan hubungkan dengan 'amanah' menggunakan ID-nya
+            $amalSholeh = AmalSholeh::create([
+                'id_ustadz' => $user->id_ustadz,
+                'id_santri' => $id_santri,
+                'hafalan' => $request->hafalan,
+                'mutqin' => $request->mutqin,
+                'fundraising' => $request->fundraising,
+                'name_amanah' => $nameAmanah,
+                'kedisiplinan' => $request->kedisiplinan,
+            ]);
+
+            return response()->json(['message' => 'Amal Sholeh untuk santri berhasil dibuat', 'santri' => $santri->name, 'user' => $amalSholeh], 201);
         } else {
             return response()->json(['error' => 'Tidak Diotorisasi'], 401);
         }
@@ -98,7 +107,7 @@ class AmalSholehController extends Controller
             'hafalan' => 'required|string',
             'mutqin' => 'required|string',
             'fundraising' => 'required|string',
-            'amanah' => 'required|string',
+            'name_amanah' => 'required|exists:categori_amanahs,name_amanah',
             'kedisiplinan' => 'required|string',
         ]);
 
@@ -108,28 +117,30 @@ class AmalSholehController extends Controller
 
         $user = Auth::user();
 
-        // Pastikan pengguna adalah ustadz
-        if (!$user || $user->role !== 'ust_pondok') {
+        // Pastikan pengguna adalah 'ustadz'
+        if ($user && $user->role === 'ust_pondok') {
+            // Temukan 'AmalSholeh' berdasarkan 'id_amal'
+            $amalSholeh = AmalSholeh::find($id_amal)->first();
+
+            if (!$amalSholeh) {
+                return response()->json(['error' => 'Amal Sholeh tidak ditemukan'], 404);
+            }
+
+            // Update data AmalSholeh
+            $amalSholeh->hafalan = $request->hafalan;
+            $amalSholeh->mutqin = $request->mutqin;
+            $amalSholeh->fundraising = $request->fundraising;
+            $amalSholeh->name_amanah = $request->input('name_amanah');
+            $amalSholeh->kedisiplinan = $request->kedisiplinan;
+
+            $amalSholeh->save();
+
+            return response()->json(['message' => 'Amal Sholeh berhasil diperbarui', 'user' => $amalSholeh], 200);
+        } else {
             return response()->json(['error' => 'Tidak Diotorisasi'], 401);
         }
-
-        // Temukan rekaman AmalSholeh berdasarkan id_amal
-        $amalSholeh = AmalSholeh::find($id_amal);
-
-        if (!$amalSholeh) {
-            return response()->json(['error' => 'Amal Sholeh tidak ditemukan'], 404);
-        }
-
-        $amalSholeh->update([
-            'hafalan' => $request->hafalan,
-            'mutqin' => $request->mutqin,
-            'fundraising' => $request->fundraising,
-            'amanah' => $request->amanah,
-            'kedisiplinan' => $request->kedisiplinan,
-        ]);
-
-        return response()->json(['message' => 'Amal Sholeh santri berhasil diupdate', 'santri' => $user->name, 'amalSholeh' => $amalSholeh], 200);
     }
+
 
 
 

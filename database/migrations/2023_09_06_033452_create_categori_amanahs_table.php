@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('categori_amanahs', function (Blueprint $table) {
             $table->id('id_amanah');
             $table->unsignedBigInteger('id_admin');
-            $table->string('amanah');
+            $table->string('name_amanah');
             $table->timestamps();
 
             $table->foreign('id_admin')->references('id_user')->on('users')->onDelete('cascade');

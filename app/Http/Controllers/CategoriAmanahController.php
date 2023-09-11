@@ -19,7 +19,7 @@ class CategoriAmanahController extends Controller
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'amanah' => 'required|string',
+            'name_amanah' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -37,7 +37,7 @@ class CategoriAmanahController extends Controller
         }
         $amanah = CategoriAmanah::create([
             'id_admin' => $user->id_user, // Menggunakan id_user dari pengguna yang terautentikasi
-            'amanah' => $request->amanah,
+            'name_amanah' => $request->name_amanah,
         ]);
 
         $amanah->save();
@@ -50,7 +50,7 @@ class CategoriAmanahController extends Controller
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'amanah' => 'required|string',
+            'name_amanah' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -65,7 +65,7 @@ class CategoriAmanahController extends Controller
         }
 
         // Update kategori absen
-        $amanah->amanah = $request->amanah;
+        $amanah->name_amanah = $request->name_amanah;
         $amanah->save();
 
         return response()->json(['user' => $amanah], 200);

@@ -15,12 +15,11 @@ return new class extends Migration
             $table->id('id_amal');
             $table->unsignedBigInteger('id_ustadz');
             $table->unsignedBigInteger('id_santri');
-            $table->unsignedBigInteger('id_amanah');
             $table->string('hafalan')->nullable();
             $table->string('mutqin')->nullable();
             $table->string('gambar')->nullable();
             $table->string('fundraising')->nullable();
-            $table->string('amanah')->nullable();
+            $table->string('name_amanah')->nullable();
             $table->integer('kedisiplinan')->nullable();
             $table->timestamps();
 

@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class AmalSholeh extends Model
 {
     use HasFactory;
-    protected $primaryKey = 'id_hafalan';
+    protected $primaryKey = 'id_amal';
+    protected $table = 'amal_sholehs';
     protected $fillable = [
         'id_santri',
         'id_ustadz',
@@ -16,7 +17,7 @@ class AmalSholeh extends Model
         'mutqin',
         'gambar',
         'fundraising',
-        'amanah',
+        'name_amanah',
         'kedisiplinan',
     ];
 

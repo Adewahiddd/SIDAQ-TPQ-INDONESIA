@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\AmalSholeh;
+use App\Models\CategoriDivisi;
 use App\Models\ProfileSantri;
-use App\Models\Santri;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,10 +43,16 @@ class SantriController extends Controller
             'password' => 'required|min:8',
             'role' => 'required|string',
             'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'nomorwa' => ['required', 'regex:/^(08|\+628)\d{8,12}$/'],
+            'status' => 'required|string',
+            'aktivitas' => 'required|in:aktif,tidak aktif',
             'tgl_lahir' => 'required|date_format:Y/m/d',
             'gender' => 'required|string',
             'angkatan' => 'required|string',
+            'name_divisi' => 'required|exists:categori_divisis,name_divisi',
+            'provinsi' => 'required|string',
         ]);
+        // dd($validator);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 400);
@@ -75,6 +81,10 @@ class SantriController extends Controller
         $idUstPondok = $IdUstadz->id_ustadz;
         $IdAdmin = $IdUstadz->id_admin;
 
+        // Generate a random 'idcard'
+        $idcard = mt_rand(100000000000, 999999999999);
+        $aktivitas = $request->aktivitas === 'aktif' ? true : false;
+
         // Create a new user
         $user = User::create([
             'name' => $request->name,
@@ -86,28 +96,41 @@ class SantriController extends Controller
             'id_santri' => $newIdSantriPondok,
         ]);
 
-        // Handle image upload
-        $gambar = $request->file('gambar');
-        if (!$gambar->isValid()) {
-            return response()->json(['error' => 'Invalid image file'], 400);
-        }
+            $nameDivisi = $request->input('name_divisi');
+            $divisiEntry = CategoriDivisi::where('name_divisi', $nameDivisi)->first();
 
-         // Upload and save gambar
-         $gambar = $request->file('gambar');
-         $gambarPath = 'images/poto-santri/' . $user->id_user . '.' . $gambar->getClientOriginalExtension();
-         $gambar->move(public_path('images/poto-santri'), $gambarPath);
+            if (!$divisiEntry) {
+                return response()->json(['error' => 'Divisi not found'], 404);
+            }
 
-        // Create a new ProfileSantri
-        $ustadz = ProfileSantri::create([
-            'id_admin' => $IdAdmin,
-            'id_ustadz' => $idUstPondok,
-            'id_santri' => $newIdSantriPondok,
-            'id_user' => $user->id_user,
-            'gambar' => $gambarPath,
-            'tgl_lahir' => $request->tgl_lahir,
-            'gender' => $request->gender,
-            'angkatan' => $request->angkatan,
-        ]);
+            // Handle image upload
+            $gambar = $request->file('gambar');
+            if (!$gambar->isValid()) {
+                return response()->json(['error' => 'Invalid image file'], 400);
+            }
+
+            // Upload and save gambar
+            $gambar = $request->file('gambar');
+            $gambarPath = 'images/poto-santri/' . $user->id_user . '.' . $gambar->getClientOriginalExtension();
+            $gambar->move(public_path('images/poto-santri'), $gambarPath);
+
+             // Create a new ProfileSantri
+            $ustadz = ProfileSantri::create([
+                'id_admin' => $IdAdmin,
+                'id_ustadz' => $idUstPondok,
+                'id_santri' => $newIdSantriPondok,
+                'id_user' => $user->id_user,
+                'gambar' => $gambarPath,
+                'idcard' => $idcard,
+                'nomorwa' => $request->nomorwa,
+                'status' => $request->status,
+                'aktivitas' => $aktivitas,
+                'tgl_lahir' => $request->tgl_lahir,
+                'gender' => $request->gender,
+                'angkatan' => $request->angkatan,
+                'name_divisi' => $nameDivisi,
+                'provinsi' => $request->provinsi,
+            ]);
 
         $ustadz->save();
 
@@ -117,8 +140,65 @@ class SantriController extends Controller
         return response()->json(['user' => $user, 'token' => $token], 200);
     }
 
+    public function updateSantri(Request $request, $id_santri)
+    {
+        $user = Auth::user(); // Mengambil user yang sedang login
+
+        // Periksa apakah user adalah admin_pondok atau memiliki id_admin tertentu
+        if (!$user || ($user->role != 'admin_pondok' && !$user->id_admin)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Temukan santri yang akan diperbarui
+        $santri = ProfileSantri::where('id_santri', $id_santri)->first();
+
+        // Periksa apakah santri ditemukan
+        if (!$santri) {
+            return response()->json(['error' => 'Santri not found'], 404);
+        }
+
+        // Periksa apakah santri yang akan diperbarui adalah santri_pondok
+        if ($santri->user->role != 'santri_pondok') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'role' => 'required|string',
+            'status' => 'required|string',
+            'aktivitas' => 'required|in:aktif,tidak aktif',
+            'angkatan' => 'required|string',
+            'name_divisi' => 'required|exists:categori_divisis,name_divisi',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        $santri->user->role = $request->role;
+        $santri->user->save();
+
+        $santri->status = $request->status;
+        $santri->aktivitas = $request->aktivitas === 'aktif' ? true : false;
+        $santri->angkatan = $request->angkatan;
+
+    // Ambil nilai name_divisi dari kategori divisi
+        $nameDivisi = $request->input('name_divisi');
+        $divisiEntry = CategoriDivisi::where('name_divisi', $nameDivisi)->first();
+
+        if (!$divisiEntry) {
+            return response()->json(['error' => 'Divisi not found'], 404);
+        }
+
+        $santri->name_divisi = $divisiEntry->name_divisi;
+        $santri->save();
+
+        return response()->json(['message' => 'Santri updated successfully'], 200);
+    }
+
+
 // DELETE SANTRI DARI DATA BASE
-    // public function deleteSantri($id_santri)
+    // public function deleteSantr($id_santri)
     // {
     //     $user = User::where('id_santri', $id_santri)->first();
 
@@ -284,109 +364,139 @@ class SantriController extends Controller
         return response()->json(['message' => 'Amal Sholeh santri berhasil diupdate', 'santri' => $user->name, 'amalSholeh' => $amalSholeh], 200);
     }
 
+    public function getSantriByProvinsi(Request $request)
+    {
+        $user = Auth::user(); // Mengambil user yang sedang login
+
+        // Periksa apakah user adalah admin_pondok atau memiliki id_admin tertentu
+        if (!$user || ($user->role != 'admin_pondok' && !$user->id_admin)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Filter berdasarkan id_admin jika user adalah admin_pondok
+        $query = ProfileSantri::query();
+        if ($user->role == 'admin_pondok') {
+            $query->where('id_admin', $user->id_admin);
+        } elseif ($user->id_admin) {
+            $query->where('id_admin', $user->id_admin);
+        }
+
+        // Filter hanya santri dengan role 'santri_pondok' (jika 'role' ada dalam tabel 'users')
+        $query->whereHas('user', function ($q) {
+            $q->where('role', 'santri_pondok');
+        });
+
+        // Query untuk mengambil jumlah santri berdasarkan provinsi
+        $santriByProvinsi = $query->select('provinsi', DB::raw('count(*) as total'))
+            ->groupBy('provinsi')
+            ->get();
+
+        // Membuat hasil dalam bentuk array asosiatif
+        $result = [];
+        foreach ($santriByProvinsi as $santri) {
+            $result[$santri->provinsi] = $santri->total;
+        }
+
+        return response()->json(['district' => $result], 200);
+    }
 
 
-    // public function registersantrii(Request $request)
-    // {
-    //     // Membungkus seluruh operasi dalam transaksi
-    //     DB::beginTransaction();
+    public function getSantriByAngkatan(Request $request)
+    {
+        $user = Auth::user(); // Mengambil user yang sedang login
 
-    //     try {
-    //         $ustadz = Auth::user();
+        // Periksa apakah user adalah admin_pondok atau memiliki id_admin tertentu
+        if (!$user || ($user->role != 'admin_pondok' && !$user->id_admin)) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
-    //         // Check if the ustadz has reached the limit of adding santri
-    //         $santriCount = User::where('id_ustadz', $ustadz->id_ustadz)
-    //             ->where('role', 'santri_pondok')
-    //             ->count();
+        // Filter berdasarkan id_admin jika user adalah admin_pondok
+        $query = ProfileSantri::query();
+        if ($user->role == 'admin_pondok') {
+            $query->where('id_admin', $user->id_admin);
+        } elseif ($user->id_admin) {
+            $query->where('id_admin', $user->id_admin);
+        }
 
-    //         if ($santriCount >= 10) {
-    //             return response()->json(['error' => 'You have reached the limit of adding santri'], 400);
-    //         }
+        // Filter hanya santri dengan role 'santri_pondok'
+        $query->whereHas('user', function ($q) {
+            $q->where('role', 'santri_pondok');
+        });
 
-    //         // Generate a unique ID for the new santri based on existing data
-    //         $maxIdSantriPondok = User::max('id_santri') ?? 0;
-    //         $newIdSantriPondok = $maxIdSantriPondok + 1;
+        // Query untuk mengambil jumlah santri berdasarkan angkatan
+        $santriByAngkatan = $query->select('angkatan', DB::raw('count(*) as total'))
+            ->groupBy('angkatan')
+            ->get();
 
-    //         // Validasi input
-    //         $validator = Validator::make($request->all(), [
-    //             'name' => 'required|max:255',
-    //             'email' => 'required|email|unique:users',
-    //             'password' => 'required|min:8',
-    //             'role' => 'required|string',
-    //             'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
-    //             'tgl_lahir' => 'required|date_format:Y/m/d',
-    //             'gender' => 'required|string',
-    //             'angkatan' => 'required|string',
-    //         ]);
+        // Membuat hasil dalam bentuk array
+        $result = [];
+        foreach ($santriByAngkatan as $santri) {
+            $result[$santri->angkatan] = $santri->total;
+        }
 
-    //         if ($validator->fails()) {
-    //             return response()->json(['errors' => $validator->errors()], 400);
-    //         }
-
-    //         $email = $request->email;
-
-    //         // Check if the email uses a valid domain
-    //         $allowedDomains = ['gmail.com', 'yahoo.com'];
-    //         $domain = substr(strrchr($email, "@"), 1);
-    //         if (!in_array($domain, $allowedDomains)) {
-    //             return response()->json(['error' => 'Email must use @gmail or @yahoo domain'], 400);
-    //         }
-
-    //         // Create a new user
-    //         $user = User::create([
-    //             'name' => $request->name,
-    //             'email' => $email,
-    //             'password' => bcrypt($request->password),
-    //             'role' => $request->role,
-    //             'id_admin' => $ustadz->id_admin,
-    //             'id_ustadz' => $ustadz->id_ustadz,
-    //             'id_santri' => $newIdSantriPondok,
-    //         ]);
-
-    //         // Mendapatkan ID user yang baru saja dibuat
-    //         $id_user = $user->id;
-
-    //         // Handle image upload
-    //         $gambar = $request->file('gambar');
-    //         if (!$gambar->isValid()) {
-    //             return response()->json(['error' => 'Invalid image file'], 400);
-    //         }
-
-    //         // Upload and save gambar
-    //         $gambarPath = 'images/poto-santri/' . $id_user . '.' . $gambar->getClientOriginalExtension();
-    //         $gambar->move(public_path('images/poto-santri'), $gambarPath);
-
-    //         // Create a new ProfileSantri
-    //         $profileSantri = ProfileSantri::create([
-    //             'id_ustadz' => $ustadz->id_ustadz,
-    //             'id_santri' => $newIdSantriPondok,
-    //             'id_user' => $id_user, // Menggunakan ID user yang baru saja dibuat
-    //             'gambar' => $gambarPath,
-    //             'tgl_lahir' => $request->tgl_lahir,
-    //             'gender' => $request->gender,
-    //             'angkatan' => $request->angkatan,
-    //         ]);
-
-    //         // Commit transaksi jika semua operasi berhasil
-    //         DB::commit();
-
-    //         // Create and return access token
-    //         $token = $user->createToken('API Token')->accessToken;
-
-    //         return response()->json(['user' => $user, 'token' => $token], 200);
-    //     } catch (\Exception $e) {
-    //         // Rollback transaksi jika terjadi kesalahan
-    //         DB::rollback();
-
-    //         // Handle kesalahan dengan mengembalikan pesan error
-    //         return response()->json(['error' => 'Failed to register santri. ' . $e->getMessage()], 500);
-    //     }
-    // }
+        return response()->json(['santriByAngkatan' => $result], 200);
+    }
 
 
 
+    public function updateProfileSantri(Request $request, $id_santri)
+    {
+        $user = Auth::user(); // Mengambil user yang sedang login
 
+        // Temukan santri yang akan diperbarui
+        $santri = ProfileSantri::where('id_santri', $id_santri)->first();
 
+        // Periksa apakah santri ditemukan
+        if (!$santri) {
+            return response()->json(['error' => 'Santri not found'], 404);
+        }
+
+        // Periksa apakah santri yang akan diperbarui adalah santri_pondok
+        if ($santri->user->role != 'santri_pondok') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:255',
+            'email' => 'required|email|unique:users,email,' . $santri->user->id_santri . ',id_santri',
+            'password' => 'nullable|min:8', // Ubah menjadi nullable jika tidak ingin mengubah kata sandi
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // Ubah menjadi nullable jika tidak ingin mengubah gambar
+            'nomorwa' => ['required', 'regex:/^(08|\+628)\d{8,12}$/'],
+            'tgl_lahir' => 'required|date_format:Y/m/d',
+            'gender' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        // Update data santri
+        $santri->user->name = $request->name;
+        $santri->user->email = $request->email;
+        if ($request->has('password')) {
+            $santri->user->password = bcrypt($request->password);
+        }
+
+        if ($request->hasFile('gambar')) {
+            $gambar = $request->file('gambar');
+            if (!$gambar->isValid()) {
+                return response()->json(['error' => 'Invalid image file'], 400);
+            }
+
+            $gambarPath = 'images/poto-santri/' . $santri->user->id_user . '.' . $gambar->getClientOriginalExtension();
+            $gambar->move(public_path('images/poto-santri'), $gambarPath);
+            $santri->gambar = $gambarPath;
+        }
+        $santri->nomorwa = $request->nomorwa;
+        $santri->tgl_lahir = $request->tgl_lahir;
+        $santri->gender = $request->gender;
+
+        $santri->user->save();
+        $santri->save();
+
+        return response()->json(['message' => 'Santri updated successfully'], 200);
+    }
 
 
 

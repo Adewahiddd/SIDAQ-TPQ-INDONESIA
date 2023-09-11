@@ -10,8 +10,8 @@ class CategoriDivisi extends Model
     use HasFactory;
 
     protected $primaryKey = 'id_divisi';
+    protected $table = 'categori_divisis';
     protected $fillable = [
-        'id_admin',
-        'divisi',
+        'name_divisi',
     ];
 }

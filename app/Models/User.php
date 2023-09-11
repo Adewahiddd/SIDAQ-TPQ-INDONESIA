@@ -67,8 +67,20 @@ class User extends Authenticatable
         return $this->hasMany(AmalSholeh::class, 'id_santri');
     }
 
+    public function kemampuans()
+    {
+        return $this->hasMany(Kemampuan::class);
+    }
 
+    public function absens()
+    {
+        return $this->hasMany(Absen::class);
+    }
 
+    public function hafalans()
+    {
+        return $this->hasMany(Hafalan::class);
+    }
 
 
 

@@ -14,17 +14,22 @@ class ProfileSantri extends Model
 
     protected $fillable = [
         'id_user',
+        'id_admin',
+        'id_ustadz',
+        'id_santri',
         'gambar',
         'tgl_lahir',
         'gender',
         'angkatan',
+        'name_divisi',
         'provinsi',
         'kabupaten',
         'alamat_masjid',
         'verifikasi',
-        'id_admin',
-        'id_ustadz',
-        'id_santri',
+        'idcard',
+        'nomorwa',
+        'status',
+        'aktivitas',
     ];
 
 

@@ -20,7 +20,7 @@ class CategoriAbsensiController extends Controller
     public function Createcategori(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kategori' => 'required|string',
+            'name_kategori' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -40,7 +40,7 @@ class CategoriAbsensiController extends Controller
 
         $categoriAbsen = CategoriAbsensi::create([
             'id_admin' => $user->id_user, // Menggunakan id_user dari pengguna yang terautentikasi
-            'kategori' => $request->kategori,
+            'name_kategori' => $request->name_kategori,
         ]);
 
         return response()->json(['user' => $categoriAbsen], 200);
@@ -51,7 +51,7 @@ class CategoriAbsensiController extends Controller
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'kategori' => 'required|string',
+            'name_kategori' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -66,7 +66,7 @@ class CategoriAbsensiController extends Controller
         }
 
         // Update kategori absen
-        $categoriAbsen->kategori = $request->kategori;
+        $categoriAbsen->name_kategori = $request->name_kategori;
         $categoriAbsen->save();
 
         return response()->json(['user' => $categoriAbsen], 200);

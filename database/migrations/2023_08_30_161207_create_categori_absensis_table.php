@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('categori_absensis', function (Blueprint $table) {
             $table->id('id_categoriabsen');
             $table->unsignedBigInteger('id_admin');
-            $table->string('kategori');
+            $table->string('name_kategori');
             $table->timestamps();
 
             $table->foreign('id_admin')->references('id_user')->on('users')->onDelete('cascade');

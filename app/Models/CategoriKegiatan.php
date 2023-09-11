@@ -10,8 +10,9 @@ class CategoriKegiatan extends Model
     use HasFactory;
 
     protected $primaryKey = 'id_kegiatan';
+    protected $table = 'categori_kegiatans';
     protected $fillable = [
         'id_admin',
-        'kegiatan',
+        'name_kegiatan',
     ];
 }

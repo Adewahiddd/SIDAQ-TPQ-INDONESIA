@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Kemampuan extends Model
 {
     use HasFactory;
-
+    protected $primaryKey = 'id_kemampuan';
     protected $fillable = [
-        'id_user',
+        'id_ustadz',
+        'id_santri',
         'khidmat',
         'leadership',
         'speaking',
@@ -18,4 +19,11 @@ class Kemampuan extends Model
         'mengajar',
         'admiristation',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_ustadz');
+    }
+
+
 }

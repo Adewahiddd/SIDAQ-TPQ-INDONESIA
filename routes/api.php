@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoriAmanahController;
 use App\Http\Controllers\CategoriDivisiController;
 use App\Http\Controllers\CategoriKegiatanController;
 use App\Http\Controllers\HafalanController;
+use App\Http\Controllers\KemampuanController;
 use App\Http\Controllers\SantriController;
 use App\Http\Controllers\UstadzController;
 use App\Models\CategoriAbsensi;
@@ -30,19 +31,40 @@ Route::post('register',[AuthController::class,'register']);
 Route::post('login',[AuthController::class,'login']);
 Route::post('logout',[AuthController::class,'logout'])->middleware('auth:api');
 
+Route::middleware(['auth:api', 'role:admin_pondok,ust_pondok'])->group(function () {
+// get berdasarkan Provinsi
+    Route::get('getSantriByProvinsi', [SantriController::class, 'getSantriByProvinsi']);
+// Update Sebagian penting dari santri
+    Route::put('updateSantri/{id_santri}', [SantriController::class, 'updateSantri']);
+
+});
+
+Route::middleware(['auth:api', 'role:admin_pondok,ust_pondok,ust_pondok'])->group(function () {
+// update role
+    Route::put('updateRole', [AuthController::class, 'updateRole']);
+
+});
+
 
 Route::middleware(['auth:api', 'role:admin_pondok,ust_pondok,santri_pondok'])->group(function () {
 // Update inputan admin untuk admin_pondok
     Route::get('indexamalsholeh', [AmalSholehController::class, 'index']);
-
+// get Hafalan
     Route::get('indexHafalan', [HafalanController::class, 'indexHafalan']);
-
+// index Categori
     Route::get('IndexAbsen', [CategoriAbsensiController::class, 'index']);
     Route::get('IndexAmanah', [CategoriAmanahController::class, 'index']);
     Route::get('IndexDevisi', [CategoriDivisiController::class, 'index']);
     Route::get('Indexkegiatan', [CategoriKegiatanController::class, 'index']);
+// get absen berdasarkan tgl Broken
+    Route::get('/count-categories/{id_santri}/{date}/{interval}', [AbsenController::class, 'countCategoriesByActivityAndDate']);
+// get santri berdasarkan angkatan
+    Route::get('getSantriByAngkatan', [SantriController::class, 'getSantriByAngkatan']);
 
-    Route::get('countSantriByIndex', [AbsenController::class, 'countSantriByIndex']);
+
+
+
+
 
 });
 
@@ -50,6 +72,7 @@ Route::middleware(['auth:api', 'role:admin_pondok,ust_pondok,santri_pondok'])->g
 Route::middleware(['auth:api', 'role:admin_pondok,admin_pusat'])->group(function () {
 // admin_pusat dan admin_pondok bisa update
     Route::put('updateProfile/{id}',[AuthController::class,'updateProfile']);
+    Route::get('indexprofileadminPondok',[AuthController::class,'indexprofileadminPondok']);
 
 });
 
@@ -66,8 +89,6 @@ Route::middleware(['auth:api', 'role:admin_pusat'])->group(function () {
 
 // yang bisa melihat hanya admin_pusat get semua nya
     Route::get('indexprofileadminPusat',[AuthController::class,'indexprofileadminPusat']);
-// get role admin_pondok
-    Route::get('indexprofileadminPondok',[AuthController::class,'indexprofileadminPondok']);
 
 });
 
@@ -114,7 +135,7 @@ Route::middleware(['auth:api', 'role:admin_pondok'])->group(function () {
 
 Route::middleware(['auth:api', 'role:ust_pondok'])->group(function () {
 // nge-registerin Santri
-    Route::post('register/santri',[SantriController::class,'registersantrii']);
+    Route::post('register/santri',[SantriController::class,'registersantri']);
     Route::delete('deleteSantri/{id_santri}', [SantriController::class, 'deleteSantri']);
 
 // Index Profile ustadz
@@ -129,6 +150,14 @@ Route::middleware(['auth:api', 'role:ust_pondok'])->group(function () {
     Route::delete('deletehafalan/{id_hafalan}', [HafalanController::class, 'deleteHafalan']);
 // CRUD ABSEN
     Route::post('createAbsen/{id_santri}', [AbsenController::class, 'createAbsen']);
+    Route::put('updateAbsen/{id_absen}', [AbsenController::class, 'updateAbsen']);
+    Route::delete('deleteAbsen/{id_absen}', [AbsenController::class, 'deleteAbsen']);
+
+
+
+// CRUD KEMAMPUAN
+    Route::post('createKemampuan/{id_santri}', [KemampuanController::class, 'createKemampuan']);
+    Route::put('updateKemampuan/{id_santri}', [KemampuanController::class, 'updateKemampuan']);
 
 
 
@@ -138,8 +167,10 @@ Route::middleware(['auth:api', 'role:ust_pondok'])->group(function () {
 
 
 Route::middleware(['auth:api', 'role:santri_pondok'])->group(function () {
-    // BELIM DI COBA
+// BELIM DI COBA
     Route::put('updateFundraising/{id_amal}', [SantriController::class, 'updateFundraising']);
+// Update Profile
+    Route::put('updateProfileSantri/{id_santri}', [SantriController::class, 'updateProfileSantri']);
 
 
 });

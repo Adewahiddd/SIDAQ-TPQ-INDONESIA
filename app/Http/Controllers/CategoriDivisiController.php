@@ -20,7 +20,7 @@ class CategoriDivisiController extends Controller
     {
         // Validasi permintaan
         $validator = Validator::make($request->all(), [
-            'divisi' => 'required|string',
+            'name_divisi' => 'required|string',
         ]);
 
         // Jika validasi gagal, kembalikan pesan kesalahan
@@ -38,8 +38,8 @@ class CategoriDivisiController extends Controller
 
         // Buat kategori divisi
         $categoriDivisi = CategoriDivisi::create([
-            'id_admin' => $user->id_user,
-            'divisi' => $request->input('divisi'), // Perbaikan di sini
+            // 'id_admin' => $user->id_user,
+            'name_divisi' => $request->input('name_divisi'), // Perbaikan di sini
         ]);
 
         // Simpan data kategori divisi
@@ -53,7 +53,7 @@ class CategoriDivisiController extends Controller
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'divisi' => 'required|string',
+            'name_divisi' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -68,7 +68,7 @@ class CategoriDivisiController extends Controller
         }
 
         // Update kategori Divisi
-        $categoriDivisi->divisi = $request->divisi;
+        $categoriDivisi->name_divisi = $request->name_divisi;
         $categoriDivisi->save();
 
         return response()->json(['user' => $categoriDivisi], 200);

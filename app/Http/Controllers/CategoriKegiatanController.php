@@ -19,7 +19,7 @@ class CategoriKegiatanController extends Controller
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kegiatan' => 'required|string',
+            'name_kegiatan' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -38,7 +38,7 @@ class CategoriKegiatanController extends Controller
 
         $kegiatan = CategoriKegiatan::create([
             'id_admin' => $user->id_user,
-            'kegiatan' => $request->kegiatan,
+            'name_kegiatan' => $request->name_kegiatan,
         ]);
 
         $kegiatan->save();
@@ -51,7 +51,7 @@ class CategoriKegiatanController extends Controller
     {
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'kegiatan' => 'required|string',
+            'name_kegiatan' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -66,7 +66,7 @@ class CategoriKegiatanController extends Controller
         }
 
         // Update kategori Kegiatan
-        $kegiatan->kegiatan = $request->kegiatan;
+        $kegiatan->name_kegiatan = $request->name_kegiatan;
         $kegiatan->save();
 
         return response()->json(['user' => $kegiatan], 200);

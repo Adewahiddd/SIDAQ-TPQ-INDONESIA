@@ -13,11 +13,9 @@ return new class extends Migration
     {
         Schema::create('categori_divisis', function (Blueprint $table) {
             $table->id('id_divisi');
-            $table->unsignedBigInteger('id_admin');
-            $table->string('divisi');
+            $table->string('name_divisi')->unique();;
             $table->timestamps();
 
-            $table->foreign('id_admin')->references('id_user')->on('users')->onDelete('cascade');
         });
     }
 

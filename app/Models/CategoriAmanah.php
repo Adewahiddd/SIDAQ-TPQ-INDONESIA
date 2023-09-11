@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class CategoriAmanah extends Model
 {
     use HasFactory;
-
+    protected $table = 'categori_amanahs';
     protected $primaryKey = 'id_amanah';
     protected $fillable = [
         'id_admin',
-        'amanah',
+        'name_amanah',
     ];
 }

@@ -45,7 +45,7 @@ class HafalanController extends Controller
 
                 return response()->json(['message' => 'Hafalan santri berhasil dibuat', 'santri' => $santri->name, 'hafalan' => $hafalan], 201);
             } else {
-                return response()->json(['error' => 'Santri tidak ditemukan atau tidak diotorisasi'], 401);
+                return response()->json(['error' => 'Santri tidak ditemukan'], 401);
             }
         } else {
             return response()->json(['error' => 'Tidak Diotorisasi'], 401);

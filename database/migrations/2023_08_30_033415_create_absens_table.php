@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id('id_absen');
             $table->unsignedBigInteger('id_ustadz');
             $table->unsignedBigInteger('id_santri');
-            $table->string('waktu');
-            $table->string('keterangan');
+            $table->string('name_kegiatan');
+            $table->string('name_kategori');
             $table->timestamps();
 
             $table->foreign('id_ustadz')->references('id_user')->on('users')->onDelete('cascade');

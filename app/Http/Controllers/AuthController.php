@@ -330,14 +330,50 @@ class AuthController extends Controller
         return response()->json(['admin_profiles' => $response], 200);
     }
 
-
-
-
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();
 
         return response()->json(['message' => 'Successfully logged out']);
+    }
+
+
+    public function updateRole(Request $request, $id_santri)
+    {
+        $user = Auth::user(); // Mengambil user yang sedang login
+
+        // Periksa apakah user adalah admin_pusat, admin_pondok, atau ust_pondok
+        if (!$user || !in_array($user->role, ['admin_pusat', 'admin_pondok', 'ust_pondok'])) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Temukan santri yang akan diperbarui
+        $santri = ProfileSantri::where('id_santri', $id_santri)->first();
+
+        // Periksa apakah santri ditemukan
+        if (!$santri) {
+            return response()->json(['error' => 'Santri not found'], 404);
+        }
+
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'role' => 'required|string|in:admin_pusat,admin_pondok,ust_pondok',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
+
+        // Periksa apakah role yang akan diupdate sesuai dengan role yang diperbolehkan
+        if (!in_array($request->role, ['admin_pusat', 'admin_pondok', 'ust_pondok'])) {
+            return response()->json(['error' => 'Invalid role'], 400);
+        }
+
+        // Update role santri
+        $santri->user->role = $request->role;
+        $santri->user->save();
+
+        return response()->json(['message' => 'Role updated successfully'], 200);
     }
 
 

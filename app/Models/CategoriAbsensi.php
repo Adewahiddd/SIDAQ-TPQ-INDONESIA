@@ -10,8 +10,9 @@ class CategoriAbsensi extends Model
     use HasFactory;
 
     protected $primaryKey = 'id_categoriabsen';
+    protected $table = 'categori_absensis';
     protected $fillable = [
         'id_admin',
-        'kategori',
+        'name_kategori',
     ];
 }

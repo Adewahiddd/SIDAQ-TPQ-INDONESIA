@@ -48,6 +48,7 @@ class UstadzController extends Controller
             'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
             'tgl_lahir' => 'required|date_format:Y/m/d',
             'gender' => 'required|string',
+            'provinsi' => 'required|string',
         ]);
 
         if ($validator->fails()) {
@@ -102,6 +103,7 @@ class UstadzController extends Controller
             'gambar' => $gambarPath,
             'tgl_lahir' => $request->tgl_lahir,
             'gender' => $request->gender,
+            'provinsi' => $request->provinsi,
         ]);
 
         $ustadz->save();

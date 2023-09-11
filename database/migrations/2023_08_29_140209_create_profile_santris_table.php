@@ -18,9 +18,14 @@ return new class extends Migration
         $table->unsignedBigInteger('id_ustadz')->nullable();
         $table->unsignedBigInteger('id_santri')->nullable();
         $table->string('gambar');
+        $table->string('idcard', 12)->nullable()->unique();
+        $table->bigInteger('nomorwa')->nullable();
+        $table->string('status')->nullable();  // AKTIF ATAU TIDAK AKTIF
+        $table->boolean('aktivitas')->nullable();
         $table->date('tgl_lahir')->nullable();
         $table->string('gender')->nullable();
         $table->string('angkatan')->nullable();
+        $table->string('name_divisi')->nullable();
         $table->string('provinsi')->nullable();
         $table->string('kabupaten')->nullable();
         $table->string('alamat_masjid')->nullable();
